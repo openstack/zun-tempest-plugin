@@ -16,7 +16,7 @@ import os
 
 from tempest.test_discover import plugins
 
-from zun.tests.tempest import config as config_zun
+from zun_tempest_plugin.tests.tempest import config as config_zun
 
 
 class ZunTempestPlugin(plugins.TempestPlugin):
@@ -24,7 +24,7 @@ class ZunTempestPlugin(plugins.TempestPlugin):
         base_path = os.path.split(os.path.dirname(
             os.path.abspath(__file__)))[0]
         base_path += '/../..'
-        test_dir = "zun/tests/tempest"
+        test_dir = "zun_tempest_plugin/tests/tempest"
         full_test_dir = os.path.join(base_path, test_dir)
         return full_test_dir, base_path
 

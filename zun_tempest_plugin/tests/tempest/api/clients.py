@@ -19,9 +19,9 @@ from tempest.lib.services.network import security_groups_client
 from tempest import manager
 
 from zun.container.docker import utils as docker_utils
-from zun.tests.tempest.api.models import container_model
-from zun.tests.tempest.api.models import service_model
-from zun.tests.tempest import utils
+from zun_tempest_plugin.tests.tempest.api.models import container_model
+from zun_tempest_plugin.tests.tempest.api.models import service_model
+from zun_tempest_plugin.tests.tempest import utils
 
 
 CONF = config.CONF

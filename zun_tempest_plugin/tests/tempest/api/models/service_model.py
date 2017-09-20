@@ -10,7 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from zun.tests.tempest.api.common import base_model
+from zun_tempest_plugin.tests.tempest.api.common import base_model
 
 
 class ServiceData(base_model.BaseModel):

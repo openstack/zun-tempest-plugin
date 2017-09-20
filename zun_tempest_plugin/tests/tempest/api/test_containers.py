@@ -13,10 +13,10 @@
 from oslo_utils import encodeutils
 from tempest.lib import decorators
 
-from zun.tests.tempest.api import clients
-from zun.tests.tempest.api.common import datagen
-from zun.tests.tempest import base
-from zun.tests.tempest import utils
+from zun_tempest_plugin.tests.tempest.api import clients
+from zun_tempest_plugin.tests.tempest.api.common import datagen
+from zun_tempest_plugin.tests.tempest import base
+from zun_tempest_plugin.tests.tempest import utils
 
 
 class TestContainer(base.BaseZunTest):

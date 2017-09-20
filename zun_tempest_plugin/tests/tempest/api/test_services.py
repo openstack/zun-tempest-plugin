@@ -13,8 +13,8 @@
 from tempest.lib import decorators
 from tempest.lib import exceptions
 
-from zun.tests.tempest.api import clients
-from zun.tests.tempest import base
+from zun_tempest_plugin.tests.tempest.api import clients
+from zun_tempest_plugin.tests.tempest import base
 
 
 class TestService(base.BaseZunTest):

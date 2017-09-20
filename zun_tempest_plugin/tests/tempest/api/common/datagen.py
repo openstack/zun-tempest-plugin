@@ -16,7 +16,7 @@ import string
 import struct
 
 from tempest.lib.common.utils import data_utils
-from zun.tests.tempest.api.models import container_model
+from zun_tempest_plugin.tests.tempest.api.models import container_model
 
 
 def random_int(min_int=1, max_int=100):
