@@ -34,6 +34,8 @@ class ZunTempestPlugin(plugins.TempestPlugin):
         conf.register_group(config_zun.container_management_group)
         conf.register_opts(config_zun.ContainerManagementGroup,
                            group='container_management')
+        conf.register_group(config_zun.docker_group)
+        conf.register_opts(config_zun.docker_opts, group='docker')
 
     def get_opt_lists(self):
         return [(config_zun.container_management_group.name,

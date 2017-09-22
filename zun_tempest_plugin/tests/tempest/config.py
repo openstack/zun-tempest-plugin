@@ -11,6 +11,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import socket
+
 from oslo_config import cfg
 
 service_option = cfg.BoolOpt("zun",
@@ -28,4 +30,31 @@ ContainerManagementGroup = [
     cfg.IntOpt("wait_timeout",
                default=60,
                help="Waiting time for a specific status, in seconds.")
+]
+
+docker_group = cfg.OptGroup(name='docker',
+                            title='Options for docker')
+
+docker_opts = [
+    cfg.StrOpt('docker_remote_api_version',
+               default='1.26',
+               help='Docker remote api version. Override it according to '
+                    'specific docker api version in your environment.'),
+    cfg.IntOpt('default_timeout',
+               default=60,
+               help='Default timeout in seconds for docker client '
+                    'operations.'),
+    cfg.StrOpt('api_url',
+               default='unix:///var/run/docker.sock',
+               help='API endpoint of docker daemon'),
+    cfg.StrOpt('docker_remote_api_url',
+               default='tcp://$docker_remote_api_host:$docker_remote_api_port',
+               help='Remote API endpoint of docker daemon'),
+    cfg.StrOpt('docker_remote_api_host',
+               default=socket.gethostname(),
+               sample_default='localhost',
+               help='Defines the remote api host for the docker daemon.'),
+    cfg.StrOpt('docker_remote_api_port',
+               default='2375',
+               help='Defines the remote api port for the docker daemon.'),
 ]

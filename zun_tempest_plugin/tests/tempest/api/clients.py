@@ -10,10 +10,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 import contextlib
-import sys
 
-from docker import errors as docker_errors
-import six
+import docker
 from six.moves.urllib import parse
 from tempest import config
 from tempest.lib.common import rest_client
@@ -22,14 +20,11 @@ from tempest.lib.services.network import ports_client
 from tempest.lib.services.network import security_groups_client
 from tempest import manager
 
-from zun.common import exception
-import zun.conf
-from zun.container.docker import utils as docker_utils
 from zun_tempest_plugin.tests.tempest.api.models import container_model
 from zun_tempest_plugin.tests.tempest.api.models import service_model
 from zun_tempest_plugin.tests.tempest import utils
 
-ZUN_CONF = zun.conf.CONF
+
 CONF = config.CONF
 
 
@@ -211,28 +206,45 @@ class ZunClient(rest_client.RestClient):
 
 @contextlib.contextmanager
 def docker_client(docker_auth_url):
-    client_kwargs = dict()
-    if not ZUN_CONF.docker.api_insecure:
-        client_kwargs['ca_cert'] = CONF.docker.ca_file
-        client_kwargs['client_key'] = CONF.docker.key_file
-        client_kwargs['client_cert'] = CONF.docker.key_file
+    yield DockerHTTPClient(
+        docker_auth_url,
+        CONF.docker.docker_remote_api_version,
+        CONF.docker.default_timeout
+    )
 
-    try:
-        yield docker_utils.DockerHTTPClient(
-            docker_auth_url,
-            ZUN_CONF.docker.docker_remote_api_version,
-            ZUN_CONF.docker.default_timeout,
-            **client_kwargs
+
+class DockerHTTPClient(docker.APIClient):
+    def __init__(self, url=CONF.docker.api_url,
+                 ver=CONF.docker.docker_remote_api_version,
+                 timeout=CONF.docker.default_timeout):
+        super(DockerHTTPClient, self).__init__(
+            base_url=url,
+            version=ver,
+            timeout=timeout,
+            tls=False
         )
-    except docker_errors.APIError as e:
-        desired_exc = exception.DockerError(error_msg=six.text_type(e))
-        six.reraise(type(desired_exc), desired_exc, sys.exc_info()[2])
+
+    def list_instances(self, inspect=False):
+        """List all containers."""
+        res = []
+        for container in self.containers(all=True):
+            info = self.inspect_container(container['Id'])
+            if not info:
+                continue
+            if inspect:
+                res.append(info)
+            else:
+                res.append(info['Config'].get('Hostname'))
+        return res
+
+    def list_containers(self):
+        return self.containers(all=True, filters={'name': 'zun-'})
 
 
 class DockerClient(object):
 
     def get_container(self, container_id,
-                      docker_auth_url=ZUN_CONF.docker.api_url):
+                      docker_auth_url=CONF.docker.api_url):
         with docker_client(docker_auth_url) as docker:
             for info in docker.list_instances(inspect=True):
                 if container_id in info['Name']:
@@ -241,7 +253,7 @@ class DockerClient(object):
 
     def ensure_container_pid_changed(
             self, container_id, pid,
-            docker_auth_url=ZUN_CONF.docker.api_url):
+            docker_auth_url=CONF.docker.api_url):
         def is_pid_changed():
             container = self.get_container(container_id,
                                            docker_auth_url=docker_auth_url)
@@ -254,24 +266,24 @@ class DockerClient(object):
 
     def pull_image(
             self, repo, tag=None,
-            docker_auth_url=ZUN_CONF.docker.api_url):
+            docker_auth_url=CONF.docker.api_url):
         with docker_client(docker_auth_url) as docker:
             docker.pull(repo, tag=tag)
 
-    def get_image(self, name, docker_auth_url=ZUN_CONF.docker.api_url):
+    def get_image(self, name, docker_auth_url=CONF.docker.api_url):
         with docker_client(docker_auth_url) as docker:
             return docker.get_image(name)
 
-    def delete_image(self, name, docker_auth_url=ZUN_CONF.docker.api_url):
+    def delete_image(self, name, docker_auth_url=CONF.docker.api_url):
         with docker_client(docker_auth_url) as docker:
             return docker.remove_image(name)
 
     def list_networks(self, name,
-                      docker_auth_url=ZUN_CONF.docker.api_url):
+                      docker_auth_url=CONF.docker.api_url):
         with docker_client(docker_auth_url) as docker:
             return docker.networks(names=[name])
 
     def remove_network(self, name,
-                       docker_auth_url=ZUN_CONF.docker.api_url):
+                       docker_auth_url=CONF.docker.api_url):
         with docker_client(docker_auth_url) as docker:
             return docker.remove_network(name)
