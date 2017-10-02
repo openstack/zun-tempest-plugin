@@ -1,0 +1,12 @@
+- project:
+    name: openstack/zun-tempest-plugin
+    check:
+      jobs:
+        - zun-tempest-docker-sql
+        - zun-tempest-py35-docker-sql
+        - zun-tempest-docker-etcd
+        - zun-tempest-multinode-docker-sql
+    gate:
+      jobs:
+        - zun-tempest-docker-sql
+        - zun-tempest-py35-docker-sql
