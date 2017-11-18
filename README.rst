@@ -1,19 +1,37 @@
-===============================
-zun_tempest_plugin
-===============================
+========================
+Team and repository tags
+========================
 
-Tempest plugin zun_tempest_plugin
+.. image:: http://governance.openstack.org/badges/zun-tempest-plugin.svg
+    :target: http://governance.openstack.org/reference/tags/index.html
 
-Please fill here a long description which must be at least 3 lines wrapped on
-80 cols, so that distribution package maintainers can use it in their packages.
-Note that this is a hard requirement.
+==========================
+Tempest Integration of Zun
+==========================
+
+This directory contains Tempest tests to cover the Zun project, as well
+as a plugin to automatically load these tests into tempest.
+
+See the Tempest plugin docs for information on using it:
+http://docs.openstack.org/developer/tempest/plugin.html#using-plugins
 
 * Free software: Apache license
-* Documentation: http://docs.openstack.org/developer/zun_tempest_plugin
-* Source: http://git.openstack.org/cgit/openstack/zun_tempest_plugin
+* Documentation: http://docs.openstack.org/developer/zun-tempest-plugin
+* Source: http://git.openstack.org/cgit/openstack/zun-tempest-plugin
 * Bugs: http://bugs.launchpad.net/zun
 
-Features
---------
+Running the tests
+-----------------
 
-* TODO
+To run all tests from this plugin, install Zun into your environment and
+navigate to tempest directory::
+
+    $ cd /opt/stack/tempest
+
+Run this command::
+
+    $ tox -e all-plugin -- zun_tempest_plugin.tests.tempest.api
+
+To run a single test case, run with the test case name, for example::
+
+    $ tox -e all-plugin -- zun_tempest_plugin.tests.tempest.api.test_containers.test_list_containers
