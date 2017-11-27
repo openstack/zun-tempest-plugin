@@ -21,6 +21,9 @@ from zun_tempest_plugin.tests.tempest import utils
 
 class TestContainer(base.BaseZunTest):
 
+    credentials = ['primary', 'admin']
+    min_microversion = '1.7'
+
     @classmethod
     def get_client_manager(cls, credential_type=None, roles=None,
                            force_new=None):
@@ -55,8 +58,12 @@ class TestContainer(base.BaseZunTest):
             if c['uuid'] in self.containers:
                 if c['host'] and c['host'] not in hosts:
                     hosts.append(c['host'])
-                self.container_client.delete_container(c['uuid'],
-                                                       params={'force': True})
+                # NOTE(kiennt): From version 1.7, Zun disallowed non-admin
+                #               users to force delete containers. Therefore,
+                #               we have to be admin to do this action.
+                self.os_admin.container_client.delete_container(
+                    c['uuid'],
+                    params={'force': True, 'all_tenants': True})
                 self.container_client.ensure_container_deleted(c['uuid'])
 
         # cleanup the network resources
@@ -453,8 +460,12 @@ class TestContainer(base.BaseZunTest):
         return resp, model
 
     def _delete_container(self, container_id, container_host, force=False):
-        resp, _ = self.container_client.delete_container(
-            container_id, params={'force': force})
+        # NOTE(kiennt): From version 1.7, Zun disallowed non-admin users
+        #               to force delete containers. Therefore, we
+        #               have to be admin to do this action.
+        resp, _ = self.os_admin.container_client.delete_container(
+            container_id,
+            params={'force': force, 'all_tenants': True})
         self.assertEqual(204, resp.status)
         self.container_client.ensure_container_deleted(container_id)
         container = self.docker_client.get_container(

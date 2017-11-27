@@ -19,6 +19,8 @@ from zun_tempest_plugin.tests.tempest import base
 
 class TestService(base.BaseZunTest):
 
+    min_microversion = '1.7'
+
     @classmethod
     def get_client_manager(cls, credential_type=None, roles=None,
                            force_new=None):

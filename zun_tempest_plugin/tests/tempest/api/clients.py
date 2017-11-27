@@ -13,7 +13,9 @@ import contextlib
 
 import docker
 from six.moves.urllib import parse
+from tempest.common import credentials_factory as common_creds
 from tempest import config
+from tempest.lib.common import api_version_utils
 from tempest.lib.common import rest_client
 from tempest.lib.services.image.v2 import images_client
 from tempest.lib.services.network import ports_client
@@ -27,10 +29,40 @@ from zun_tempest_plugin.tests.tempest import utils
 
 CONF = config.CONF
 
+ADMIN_CREDS = None
+
+CONTAINER_MANAGEMENT_MICROVERSION = None
+
+
+def get_container_management_api_version():
+    """Get zun-api-version with format: 'container X.Y'"""
+    return 'container ' + CONTAINER_MANAGEMENT_MICROVERSION
+
+
+def set_container_management_api_microversion(
+        container_management_microversion):
+    global CONTAINER_MANAGEMENT_MICROVERSION
+    CONTAINER_MANAGEMENT_MICROVERSION = container_management_microversion
+
+
+def reset_container_management_api_microversion():
+    global CONTAINER_MANAGEMENT_MICROVERSION
+    CONTAINER_MANAGEMENT_MICROVERSION = None
+
 
 class Manager(manager.Manager):
 
-    def __init__(self, credentials=None, service=None):
+    def __init__(self, credentials=None):
+        """Initialization of Manager class.
+
+        Setup service client and make it available for test cases.
+        :param credentials: type Credentials or TestResources
+        """
+        if credentials is None:
+            global ADMIN_CREDS
+            if ADMIN_CREDS is None:
+                ADMIN_CREDS = common_creds.get_configured_admin_credentials()
+            credentials = ADMIN_CREDS
         super(Manager, self).__init__(credentials=credentials)
 
         self.images_client = images_client.ImagesClient(
@@ -43,6 +75,9 @@ class Manager(manager.Manager):
 
 
 class ZunClient(rest_client.RestClient):
+    """"Base Tempest REST client for Zun API."""
+
+    api_microversion_header_name = 'OpenStack-API-Version'
 
     def __init__(self, auth_provider):
         super(ZunClient, self).__init__(
@@ -51,6 +86,24 @@ class ZunClient(rest_client.RestClient):
             region=CONF.identity.region,
             disable_ssl_certificate_validation=True
         )
+
+    def get_headers(self):
+        headers = super(ZunClient, self).get_headers()
+        if CONTAINER_MANAGEMENT_MICROVERSION:
+            headers[self.api_microversion_header_name] = \
+                get_container_management_api_version()
+        return headers
+
+    def request(self, *args, **kwargs):
+        resp, resp_body = super(ZunClient, self).request(*args, **kwargs)
+        if (CONTAINER_MANAGEMENT_MICROVERSION and
+            CONTAINER_MANAGEMENT_MICROVERSION
+                != api_version_utils.LATEST_MICROVERSION):
+            api_version_utils.assert_version_header_matches_request(
+                self.api_microversion_header_name,
+                get_container_management_api_version(),
+                resp)
+        return resp, resp_body
 
     @classmethod
     def deserialize(cls, resp, body, model_type):

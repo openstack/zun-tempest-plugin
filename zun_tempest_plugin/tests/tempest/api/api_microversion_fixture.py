@@ -1,0 +1,28 @@
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+import fixtures
+
+from zun_tempest_plugin.tests.tempest.api import clients
+
+
+class APIMicroversionFixture(fixtures.Fixture):
+
+    def __init__(self, container_management_microversion):
+        self.container_management_microversion = \
+            container_management_microversion
+
+    def _setUp(self):
+        super(APIMicroversionFixture, self)._setUp()
+        clients.set_container_management_api_microversion(
+            self.container_management_microversion)
+        self.addCleanup(clients.reset_container_management_api_microversion)
