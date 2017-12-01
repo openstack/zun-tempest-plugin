@@ -460,12 +460,7 @@ class TestContainer(base.BaseZunTest):
         return resp, model
 
     def _delete_container(self, container_id, container_host, force=False):
-        # NOTE(kiennt): From version 1.7, Zun disallowed non-admin users
-        #               to force delete containers. Therefore, we
-        #               have to be admin to do this action.
-        resp, _ = self.os_admin.container_client.delete_container(
-            container_id,
-            params={'force': force, 'all_tenants': True})
+        resp, _ = self.container_client.delete_container(container_id)
         self.assertEqual(204, resp.status)
         self.container_client.ensure_container_deleted(container_id)
         container = self.docker_client.get_container(
