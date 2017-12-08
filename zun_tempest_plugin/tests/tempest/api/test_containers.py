@@ -104,7 +104,12 @@ class TestContainer(base.BaseZunTest):
     @decorators.idempotent_id('cef53a56-22b7-4808-b01c-06b2b7126115')
     def test_delete_container(self):
         _, container = self._create_container()
-        self._delete_container(container.uuid, container.host, True)
+        resp, _ = self.container_client.delete_container(container.uuid)
+        self.assertEqual(204, resp.status)
+        self.container_client.ensure_container_deleted(container.uuid)
+        container = self.docker_client.get_container(
+            container.uuid, self._get_docker_url(container.host))
+        self.assertIsNone(container)
 
     @decorators.idempotent_id('ef69c9e7-0ce0-4e14-b7ec-c1dc581a3927')
     def test_run_container(self):
@@ -458,14 +463,6 @@ class TestContainer(base.BaseZunTest):
                                                               model.host))
         self.assertIsNotNone(model.host)
         return resp, model
-
-    def _delete_container(self, container_id, container_host, force=False):
-        resp, _ = self.container_client.delete_container(container_id)
-        self.assertEqual(204, resp.status)
-        self.container_client.ensure_container_deleted(container_id)
-        container = self.docker_client.get_container(
-            container_id, self._get_docker_url(container_host))
-        self.assertIsNone(container)
 
     def _get_container_state(self, container_id, docker_host=None):
         if docker_host is not None:
