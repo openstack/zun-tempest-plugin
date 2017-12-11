@@ -254,7 +254,7 @@ class ZunClient(rest_client.RestClient):
                 return True
             else:
                 return False
-        utils.wait_for_condition(is_container_in_desired_state)
+        utils.wait_for_condition(is_container_in_desired_state, timeout=120)
 
     def ensure_container_deleted(self, container_id):
         def is_container_deleted():
