@@ -37,11 +37,11 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'zun_tempest_plugin'
+project = u'zun-tempest-plugin'
 copyright = u'2017, OpenStack Developers'
 
 # openstackdocstheme options
-repository_name = 'openstack/zun_tempest_plugin'
+repository_name = 'openstack/zun-tempest-plugin'
 bug_project = 'zun'
 bug_tag = ''
 
@@ -66,6 +66,9 @@ html_theme = 'openstackdocs'
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = '%sdoc' % project
+
+# Must set this variable to include year, month, day, hours, and minutes.
+html_last_updated_fmt = '%Y-%m-%d %H:%M'
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass

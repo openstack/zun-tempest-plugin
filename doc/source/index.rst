@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 ==================================================
-Welcome to the documentation of zun_tempest_plugin
+Welcome to the documentation of Zun tempest plugin
 ==================================================
 
 Contents:
