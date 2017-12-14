@@ -266,6 +266,18 @@ class ZunClient(rest_client.RestClient):
                 return True
         utils.wait_for_condition(is_container_deleted)
 
+    def network_attach(self, container_id, params=None, **kwargs):
+        return self.post(
+            self.container_uri(container_id, action='network_attach',
+                               params=params),
+            None, **kwargs)
+
+    def network_detach(self, container_id, params=None, **kwargs):
+        return self.post(
+            self.container_uri(container_id, action='network_detach',
+                               params=params),
+            None, **kwargs)
+
 
 @contextlib.contextmanager
 def docker_client(docker_auth_url):
