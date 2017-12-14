@@ -13,12 +13,12 @@ This directory contains Tempest tests to cover the Zun project, as well
 as a plugin to automatically load these tests into tempest.
 
 See the Tempest plugin docs for information on using it:
-http://docs.openstack.org/developer/tempest/plugin.html#using-plugins
+https://docs.openstack.org/developer/tempest/plugin.html#using-plugins
 
 * Free software: Apache license
-* Documentation: http://docs.openstack.org/developer/zun-tempest-plugin
-* Source: http://git.openstack.org/cgit/openstack/zun-tempest-plugin
-* Bugs: http://bugs.launchpad.net/zun
+* Documentation: https://docs.openstack.org/developer/zun-tempest-plugin
+* Source: https://git.openstack.org/cgit/openstack/zun-tempest-plugin
+* Bugs: https://bugs.launchpad.net/zun
 
 Running the tests
 -----------------
