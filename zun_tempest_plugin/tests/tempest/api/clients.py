@@ -167,12 +167,12 @@ class ZunClient(rest_client.RestClient):
             body=model.to_json(), **kwargs)
         return self.deserialize(resp, body, container_model.ContainerEntity)
 
-    def get_container(self, container_id):
-        resp, body = self.get(self.container_uri(container_id))
+    def get_container(self, container_id, params=None):
+        resp, body = self.get(self.container_uri(container_id, params=params))
         return self.deserialize(resp, body, container_model.ContainerEntity)
 
-    def list_containers(self, **kwargs):
-        resp, body = self.get(self.containers_uri(), **kwargs)
+    def list_containers(self, params=None, **kwargs):
+        resp, body = self.get(self.containers_uri(params=params), **kwargs)
         return self.deserialize(resp, body,
                                 container_model.ContainerCollection)
 
