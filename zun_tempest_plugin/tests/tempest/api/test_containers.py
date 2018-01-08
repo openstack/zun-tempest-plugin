@@ -54,7 +54,7 @@ class TestContainer(base.BaseZunTest):
     def tearDown(self):
         hosts = []
         _, model = self.os_admin.container_client.list_containers(
-            params={'all_tenants': True})
+            params={'all_projects': True})
         for c in model.containers:
             if c['uuid'] in self.containers:
                 if c['host'] and c['host'] not in hosts:
@@ -64,7 +64,7 @@ class TestContainer(base.BaseZunTest):
                 #               we have to be admin to do this action.
                 self.os_admin.container_client.delete_container(
                     c['uuid'],
-                    params={'force': True, 'all_tenants': True})
+                    params={'force': True, 'all_projects': True})
                 self.container_client.ensure_container_deleted(c['uuid'])
 
         # cleanup the network resources
@@ -506,7 +506,7 @@ class TestContainer(base.BaseZunTest):
         if container:
             if not hasattr(container, 'host'):
                 _, container = self.os_admin.container_client.get_container(
-                    container.uuid, params={'all_tenants': True})
+                    container.uuid, params={'all_projects': True})
             host = container.host
         # NOTE(kiennt): By default, devstack-plugin-container will
         #               set docker_api_url = {
