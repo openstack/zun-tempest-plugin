@@ -22,7 +22,7 @@ from zun_tempest_plugin.tests.tempest import utils
 class TestContainer(base.BaseZunTest):
 
     credentials = ['primary', 'admin']
-    min_microversion = '1.7'
+    min_microversion = '1.12'
 
     @classmethod
     def get_client_manager(cls, credential_type=None, roles=None,
@@ -515,3 +515,36 @@ class TestContainer(base.BaseZunTest):
         #                   }
         base_url = '{}://{}:{}' . format(protocol, host, port)
         return base_url
+
+    @decorators.idempotent_id('dcb0dddb-7f0f-43f6-b82a-0cae13938bd6')
+    def test_detach_and_attach_network_to_container(self):
+        _, model = self._run_container()
+        self.assertEqual(1, len(model.addresses))
+
+        network = list(model.addresses.keys())[0]
+        resp, body = self.container_client.network_detach(
+            model.uuid, params={'network': network})
+        self._ensure_network_detached(model, network)
+        resp, body = self.container_client.network_attach(
+            model.uuid, params={'network': network})
+        self._ensure_network_attached(model, network)
+
+    def _ensure_network_detached(self, container, network):
+        def is_network_detached():
+            _, model = self.container_client.get_container(container.uuid)
+            if network not in model.addresses:
+                return True
+            else:
+                return False
+
+        utils.wait_for_condition(is_network_detached)
+
+    def _ensure_network_attached(self, container, network):
+        def is_network_attached():
+            _, model = self.container_client.get_container(container.uuid)
+            if network in model.addresses:
+                return True
+            else:
+                return False
+
+        utils.wait_for_condition(is_network_attached)
