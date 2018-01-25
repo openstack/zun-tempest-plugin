@@ -1,5 +1,4 @@
 - project:
-    name: openstack/zun-tempest-plugin
     check:
       jobs:
         - zun-tempest-docker-sql
