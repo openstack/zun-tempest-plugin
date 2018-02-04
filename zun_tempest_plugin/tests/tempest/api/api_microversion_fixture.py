@@ -17,12 +17,12 @@ from zun_tempest_plugin.tests.tempest.api import clients
 
 class APIMicroversionFixture(fixtures.Fixture):
 
-    def __init__(self, container_management_microversion):
-        self.container_management_microversion = \
-            container_management_microversion
+    def __init__(self, container_service_microversion):
+        self.container_service_microversion = \
+            container_service_microversion
 
     def _setUp(self):
         super(APIMicroversionFixture, self)._setUp()
-        clients.set_container_management_api_microversion(
-            self.container_management_microversion)
-        self.addCleanup(clients.reset_container_management_api_microversion)
+        clients.set_container_service_api_microversion(
+            self.container_service_microversion)
+        self.addCleanup(clients.reset_container_service_api_microversion)

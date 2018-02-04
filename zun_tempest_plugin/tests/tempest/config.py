@@ -20,13 +20,13 @@ service_option = cfg.BoolOpt("zun",
                              help="Whether or not zun is expected to be "
                                   "available")
 
-container_management_group = cfg.OptGroup(
-    name="container_management", title="Container Management Service Options")
+container_service_group = cfg.OptGroup(
+    name="container_service", title="Containers Service Options")
 
-ContainerManagementGroup = [
+ContainerServiceGroup = [
     cfg.StrOpt("catalog_type",
                default="container",
-               help="Catalog type of the container management service."),
+               help="Catalog type of the containers service."),
     cfg.IntOpt("wait_timeout",
                default=60,
                help="Waiting time for a specific status, in seconds."),

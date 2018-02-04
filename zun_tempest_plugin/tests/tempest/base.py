@@ -32,8 +32,8 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
         if not CONF.service_available.zun:
             skip_msg = 'Zun is disabled'
             raise cls.skipException(skip_msg)
-        cfg_min_version = CONF.container_management.min_microversion
-        cfg_max_version = CONF.container_management.max_microversion
+        cfg_min_version = CONF.container_service.min_microversion
+        cfg_max_version = CONF.container_service.max_microversion
         api_version_utils.check_skip_with_microversion(cls.min_microversion,
                                                        cls.max_microversion,
                                                        cfg_min_version,
@@ -49,10 +49,10 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
         cls.request_microversion = (
             api_version_utils.select_request_microversion(
                 cls.min_microversion,
-                CONF.container_management.min_microversion
+                CONF.container_service.min_microversion
             ))
         cls.services_microversion = {
-            CONF.container_management.catalog_type: cls.request_microversion}
+            CONF.container_service.catalog_type: cls.request_microversion}
         super(BaseZunTest, cls).setup_credentials()
 
     @classmethod
@@ -61,8 +61,8 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
         cls.request_microversion = (
             api_version_utils.select_request_microversion(
                 cls.min_microversion,
-                CONF.container_management.min_microversion))
-        cls.wait_timeout = CONF.container_management.wait_timeout
+                CONF.container_service.min_microversion))
+        cls.wait_timeout = CONF.container_service.wait_timeout
 
     def setUp(self):
         super(BaseZunTest, self).setUp()

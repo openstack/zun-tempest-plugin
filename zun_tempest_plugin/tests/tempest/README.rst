@@ -54,7 +54,7 @@ Need to adopt tempest.conf, an example as follows::
     [oslo_concurrency]
     lock_path = /tmp/
 
-    [container_management]
+    [container_service]
     catalog_type = container
 
     [debug]

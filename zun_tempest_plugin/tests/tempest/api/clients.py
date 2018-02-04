@@ -31,23 +31,23 @@ CONF = config.CONF
 
 ADMIN_CREDS = None
 
-CONTAINER_MANAGEMENT_MICROVERSION = None
+CONTAINER_SERVICE_MICROVERSION = None
 
 
-def get_container_management_api_version():
+def get_container_service_api_version():
     """Get zun-api-version with format: 'container X.Y'"""
-    return 'container ' + CONTAINER_MANAGEMENT_MICROVERSION
+    return 'container ' + CONTAINER_SERVICE_MICROVERSION
 
 
-def set_container_management_api_microversion(
-        container_management_microversion):
-    global CONTAINER_MANAGEMENT_MICROVERSION
-    CONTAINER_MANAGEMENT_MICROVERSION = container_management_microversion
+def set_container_service_api_microversion(
+        container_service_microversion):
+    global CONTAINER_SERVICE_MICROVERSION
+    CONTAINER_SERVICE_MICROVERSION = container_service_microversion
 
 
-def reset_container_management_api_microversion():
-    global CONTAINER_MANAGEMENT_MICROVERSION
-    CONTAINER_MANAGEMENT_MICROVERSION = None
+def reset_container_service_api_microversion():
+    global CONTAINER_SERVICE_MICROVERSION
+    CONTAINER_SERVICE_MICROVERSION = None
 
 
 class Manager(manager.Manager):
@@ -82,26 +82,26 @@ class ZunClient(rest_client.RestClient):
     def __init__(self, auth_provider):
         super(ZunClient, self).__init__(
             auth_provider=auth_provider,
-            service=CONF.container_management.catalog_type,
+            service=CONF.container_service.catalog_type,
             region=CONF.identity.region,
             disable_ssl_certificate_validation=True
         )
 
     def get_headers(self):
         headers = super(ZunClient, self).get_headers()
-        if CONTAINER_MANAGEMENT_MICROVERSION:
+        if CONTAINER_SERVICE_MICROVERSION:
             headers[self.api_microversion_header_name] = \
-                get_container_management_api_version()
+                get_container_service_api_version()
         return headers
 
     def request(self, *args, **kwargs):
         resp, resp_body = super(ZunClient, self).request(*args, **kwargs)
-        if (CONTAINER_MANAGEMENT_MICROVERSION and
-            CONTAINER_MANAGEMENT_MICROVERSION
+        if (CONTAINER_SERVICE_MICROVERSION and
+            CONTAINER_SERVICE_MICROVERSION
                 != api_version_utils.LATEST_MICROVERSION):
             api_version_utils.assert_version_header_matches_request(
                 self.api_microversion_header_name,
-                get_container_management_api_version(),
+                get_container_service_api_version(),
                 resp)
         return resp, resp_body
 
