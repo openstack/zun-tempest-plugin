@@ -22,6 +22,7 @@ from tempest.lib.services.network import networks_client
 from tempest.lib.services.network import ports_client
 from tempest.lib.services.network import security_groups_client
 from tempest.lib.services.network import subnets_client
+from tempest.lib.services.volume.v3 import volumes_client
 from tempest import manager
 
 from zun_tempest_plugin.tests.tempest.api.models import capsule_model
@@ -74,6 +75,8 @@ class Manager(manager.Manager):
             self.auth_provider, 'network', CONF.identity.region)
         self.sgs_client = security_groups_client.SecurityGroupsClient(
             self.auth_provider, 'network', CONF.identity.region)
+        self.vol_client = volumes_client.VolumesClient(
+            self.auth_provider, 'volume', CONF.identity.region)
         self.container_client = ZunClient(self.auth_provider)
         self.neutron_client = networks_client.NetworksClient(
             self.auth_provider, 'network', CONF.identity.region)
