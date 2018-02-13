@@ -278,6 +278,16 @@ class ZunClient(rest_client.RestClient):
                                params=params),
             None, **kwargs)
 
+    def put_archive(self, container_id, params=None, **kwargs):
+        return self.post(
+            self.container_uri(container_id, action='put_archive',
+                               params=params), **kwargs)
+
+    def get_archive(self, container_id, params=None, **kwargs):
+        return self.get(
+            self.container_uri(container_id, action='get_archive',
+                               params=params), None, **kwargs)
+
 
 @contextlib.contextmanager
 def docker_client(docker_auth_url):
@@ -362,3 +372,8 @@ class DockerClient(object):
                        docker_auth_url=CONF.docker.api_url):
         with docker_client(docker_auth_url) as docker:
             return docker.remove_network(name)
+
+    def get_archive(self, container_id, path,
+                    docker_auth_url=CONF.docker.api_url):
+        with docker_client(docker_auth_url) as docker:
+            return docker.get_archive(container_id, path)
