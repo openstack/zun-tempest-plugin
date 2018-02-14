@@ -132,35 +132,28 @@ class TestContainer(base.BaseZunTest):
 
     @decorators.idempotent_id('c32f93e3-da88-4c13-be38-25d2e662a28e')
     def test_run_container_with_image_driver_glance(self):
-        image = None
-        try:
-            docker_base_url = self._get_docker_url()
-            self.docker_client.pull_image(
-                'cirros', docker_auth_url=docker_base_url)
-            image_data = self.docker_client.get_image(
-                'cirros', docker_base_url)
-            if isinstance(image_data, types.GeneratorType):
-                # NOTE(kiennt): In Docker-py 3.1.0, get_image
-                #               returns generator [1]. These lines
-                #               makes image_data readable.
-                # [1] https://bugs.launchpad.net/zun/+bug/1753080
-                image_data = six.b('').join(image_data)
-                image_data = six.BytesIO(image_data)
+        docker_base_url = self._get_docker_url()
+        self.docker_client.pull_image(
+            'cirros', docker_auth_url=docker_base_url)
+        image_data = self.docker_client.get_image(
+            'cirros', docker_base_url)
+        if isinstance(image_data, types.GeneratorType):
+            # NOTE(kiennt): In Docker-py 3.1.0, get_image
+            #               returns generator [1]. These lines
+            #               makes image_data readable.
+            # [1] https://bugs.launchpad.net/zun/+bug/1753080
+            image_data = six.b('').join(image_data)
+            image_data = six.BytesIO(image_data)
 
-            image = self.images_client.create_image(
-                name='cirros', disk_format='raw', container_format='docker')
-            self.images_client.store_image_file(image['id'], image_data)
-            # delete the local image that was previously pulled down
-            self.docker_client.delete_image('cirros', docker_base_url)
+        image = self.images_client.create_image(
+            name='cirros', disk_format='raw', container_format='docker')
+        self.addCleanup(self.images_client.delete_image, image['id'])
+        self.images_client.store_image_file(image['id'], image_data)
+        # delete the local image that was previously pulled down
+        self.docker_client.delete_image('cirros', docker_base_url)
 
-            _, model = self._run_container(
-                image='cirros', image_driver='glance')
-        finally:
-            if image:
-                try:
-                    self.images_client.delete_image(image['id'])
-                except Exception:
-                    pass
+        _, model = self._run_container(
+            image='cirros', image_driver='glance')
 
     @decorators.idempotent_id('b70bedbc-5ba2-400c-8f5f-0cf05ca17151')
     def test_run_container_with_environment(self):
@@ -222,7 +215,9 @@ class TestContainer(base.BaseZunTest):
     @decorators.idempotent_id('f181eeda-a9d1-4b2e-9746-d6634ca81e2f')
     def test_run_container_with_security_groups(self):
         sg_name = data_utils.rand_name('test_sg')
-        self.sgs_client.create_security_group(name=sg_name)
+        sg = self.sgs_client.create_security_group(name=sg_name)
+        self.addCleanup(self.sgs_client.delete_security_group,
+                        sg['security_group']['id'])
         _, model = self._run_container(security_groups=[sg_name])
         sgs = self._get_all_security_groups(model)
         self.assertEqual(1, len(sgs))
@@ -421,7 +416,9 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual(1, len(sgs))
         self.assertEqual('default', sgs[0])
         sg_name = data_utils.rand_name('test_add_sg')
-        self.sgs_client.create_security_group(name=sg_name)
+        sg = self.sgs_client.create_security_group(name=sg_name)
+        self.addCleanup(self.sgs_client.delete_security_group,
+                        sg['security_group']['id'])
         gen_model = datagen.container_add_sg_data(name=sg_name)
         resp, body = self.container_client.add_security_group(
             model.uuid, gen_model)
