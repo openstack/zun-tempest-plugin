@@ -16,6 +16,7 @@ import string
 import struct
 
 from tempest.lib.common.utils import data_utils
+from zun_tempest_plugin.tests.tempest.api.models import capsule_model
 from zun_tempest_plugin.tests.tempest.api.models import container_model
 
 
@@ -112,5 +113,23 @@ def container_remove_sg_data(**kwargs):
 
     data.update(kwargs)
     model = container_model.ContainerPatchEntity.from_dict(data)
+    return model
 
+
+def capsule_data(default_data=None, **kwargs):
+    if default_data is None:
+        default_data = {
+            'template': {
+                'kind': 'capsule',
+                'capsuleVersion': 'beta',
+                'metadata': {'name': data_utils.rand_name('capsule')},
+                'spec': {
+                    'containers': [
+                        {'image': 'cirros:latest'},
+                    ]
+                }
+            }
+        }
+    default_data.update(kwargs)
+    model = capsule_model.CapsuleEntity.from_dict(default_data)
     return model
