@@ -11,6 +11,7 @@
 # under the License.
 
 from oslo_utils import encodeutils
+from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 
 from zun_tempest_plugin.tests.tempest.api import clients
@@ -205,7 +206,7 @@ class TestContainer(base.BaseZunTest):
 
     @decorators.idempotent_id('f181eeda-a9d1-4b2e-9746-d6634ca81e2f')
     def test_run_container_with_security_groups(self):
-        sg_name = 'test_sg'
+        sg_name = data_utils.rand_name('test_sg')
         self.sgs_client.create_security_group(name=sg_name)
         _, model = self._run_container(security_groups=[sg_name])
         sgs = self._get_all_security_groups(model)
@@ -367,13 +368,15 @@ class TestContainer(base.BaseZunTest):
 
     @decorators.idempotent_id('b218bea7-f19b-499f-9819-c7021ffc59f4')
     def test_rename_container(self):
-        _, model = self._run_container(name='container1')
-        self.assertEqual('container1', model.name)
-        gen_model = datagen.container_rename_data(name='container2')
+        container1_name = data_utils.rand_name('container1')
+        _, model = self._run_container(name=container1_name)
+        self.assertEqual(container1_name, model.name)
+        container2_name = data_utils.rand_name('container2')
+        gen_model = datagen.container_rename_data(name=container2_name)
         resp, model = self.container_client.rename_container(model.uuid,
                                                              gen_model)
         self.assertEqual(200, resp.status)
-        self.assertEqual('container2', model.name)
+        self.assertEqual(container2_name, model.name)
 
     @decorators.idempotent_id('142b7716-0b21-41ed-b47d-a42fba75636b')
     def test_top_container(self):
@@ -402,8 +405,7 @@ class TestContainer(base.BaseZunTest):
         sgs = self._get_all_security_groups(model)
         self.assertEqual(1, len(sgs))
         self.assertEqual('default', sgs[0])
-
-        sg_name = 'test_add_sg'
+        sg_name = data_utils.rand_name('test_add_sg')
         self.sgs_client.create_security_group(name=sg_name)
         gen_model = datagen.container_add_sg_data(name=sg_name)
         resp, body = self.container_client.add_security_group(
