@@ -10,7 +10,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import types
+
 from oslo_utils import encodeutils
+import six
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 
@@ -132,6 +135,14 @@ class TestContainer(base.BaseZunTest):
                 'cirros', docker_auth_url=docker_base_url)
             image_data = self.docker_client.get_image(
                 'cirros', docker_base_url)
+            if isinstance(image_data, types.GeneratorType):
+                # NOTE(kiennt): In Docker-py 3.1.0, get_image
+                #               returns generator [1]. These lines
+                #               makes image_data readable.
+                # [1] https://bugs.launchpad.net/zun/+bug/1753080
+                image_data = ''.join(image_data)
+                image_data = six.StringIO(image_data)
+
             image = self.images_client.create_image(
                 name='cirros', disk_format='raw', container_format='docker')
             self.images_client.store_image_file(image['id'], image_data)
