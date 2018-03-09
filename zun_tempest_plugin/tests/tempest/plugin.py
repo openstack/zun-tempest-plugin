@@ -31,13 +31,13 @@ class ZunTempestPlugin(plugins.TempestPlugin):
     def register_opts(self, conf):
         conf.register_opt(config_zun.service_option,
                           group='service_available')
-        conf.register_group(config_zun.container_management_group)
-        conf.register_opts(config_zun.ContainerManagementGroup,
-                           group='container_management')
+        conf.register_group(config_zun.container_service_group)
+        conf.register_opts(config_zun.ContainerServiceGroup,
+                           group='container_service')
         conf.register_group(config_zun.docker_group)
         conf.register_opts(config_zun.docker_opts, group='docker')
 
     def get_opt_lists(self):
-        return [(config_zun.container_management_group.name,
-                 config_zun.ContainerManagementGroup),
+        return [(config_zun.container_service_group.name,
+                 config_zun.ContainerServiceGroup),
                 ('service_available', [config_zun.service_option])]
