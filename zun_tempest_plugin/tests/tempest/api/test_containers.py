@@ -144,8 +144,8 @@ class TestContainer(base.BaseZunTest):
                 #               returns generator [1]. These lines
                 #               makes image_data readable.
                 # [1] https://bugs.launchpad.net/zun/+bug/1753080
-                image_data = ''.join(image_data)
-                image_data = six.StringIO(image_data)
+                image_data = six.b('').join(image_data)
+                image_data = six.BytesIO(image_data)
 
             image = self.images_client.create_image(
                 name='cirros', disk_format='raw', container_format='docker')
