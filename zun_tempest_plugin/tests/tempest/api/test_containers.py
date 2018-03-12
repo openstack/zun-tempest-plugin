@@ -415,7 +415,7 @@ class TestContainer(base.BaseZunTest):
         self.assertTrue('BLOCK I/O(B)' in encodeutils.safe_decode(body))
 
     @decorators.idempotent_id('b3b9cf17-82ad-4c1b-a4af-8210a778a33e')
-    def test_add_sg_to_container(self):
+    def test_add_and_remove_sg_to_container(self):
         _, model = self._run_container()
         sgs = self._get_all_security_groups(model)
         self.assertEqual(1, len(sgs))
@@ -437,6 +437,19 @@ class TestContainer(base.BaseZunTest):
                 return False
 
         utils.wait_for_condition(assert_security_group_is_added)
+
+        gen_model = datagen.container_remove_sg_data(name=sg_name)
+        resp1, body = self.container_client.remove_security_group(
+            model.uuid, gen_model)
+        self.assertEqual(202, resp1.status)
+
+        def assert_security_group_is_removed():
+            sgs = self._get_all_security_groups(model)
+            if sg_name not in sgs:
+                return True
+            else:
+                return False
+        utils.wait_for_condition(assert_security_group_is_removed)
 
     def _assert_resource_constraints(self, container, cpu=None, memory=None):
         if cpu is not None:
@@ -536,8 +549,8 @@ class TestContainer(base.BaseZunTest):
     @decorators.idempotent_id('dcb0dddb-7f0f-43f6-b82a-0cae13938bd6')
     def test_detach_and_attach_network_to_container(self):
         _, model = self._run_container()
-        self.assertEqual(1, len(model.addresses))
 
+        self.assertEqual(1, len(model.addresses))
         network = list(model.addresses.keys())[0]
         resp, body = self.container_client.network_detach(
             model.uuid, params={'network': network})
