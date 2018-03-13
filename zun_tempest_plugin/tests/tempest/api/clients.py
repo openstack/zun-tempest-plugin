@@ -18,6 +18,7 @@ from tempest import config
 from tempest.lib.common import api_version_utils
 from tempest.lib.common import rest_client
 from tempest.lib.services.image.v2 import images_client
+from tempest.lib.services.network import networks_client
 from tempest.lib.services.network import ports_client
 from tempest.lib.services.network import security_groups_client
 from tempest import manager
@@ -72,6 +73,8 @@ class Manager(manager.Manager):
         self.sgs_client = security_groups_client.SecurityGroupsClient(
             self.auth_provider, 'network', CONF.identity.region)
         self.container_client = ZunClient(self.auth_provider)
+        self.neutron_client = networks_client.NetworksClient(
+            self.auth_provider, 'network', CONF.identity.region)
 
 
 class ZunClient(rest_client.RestClient):

@@ -50,6 +50,7 @@ class TestContainer(base.BaseZunTest):
         cls.images_client = cls.os_primary.images_client
         cls.ports_client = cls.os_primary.ports_client
         cls.sgs_client = cls.os_primary.sgs_client
+        cls.networks_client = cls.os_primary.neutron_client
 
     @classmethod
     def resource_setup(cls):
@@ -185,6 +186,20 @@ class TestContainer(base.BaseZunTest):
         labels = container.get('Config').get('Labels')
         self.assertTrue('key1=label1', labels)
         self.assertTrue('key2=label2', labels)
+
+    @decorators.idempotent_id('8fc7fec1-e1a2-3f65-a5a6-dba425c1607c')
+    def test_run_container_with_port(self):
+        project_id = self.container_client.tenant_id
+        networks = self.networks_client.list_networks()['networks']
+        for network in networks:
+            if network['project_id'] == project_id:
+                network_id = network['id']
+
+        port = self.ports_client.create_port(network_id=network_id,
+                                             name='testport')
+        _, model = self._run_container(nets=[{'port': 'testport'}])
+        self.assertTrue('testport', model)
+        self.addCleanup(self.ports_client.delete_port, port['port']['id'])
 
     @decorators.idempotent_id('9fc7fec0-e1a9-4f65-a5a6-dba425c1607c')
     def test_run_container_with_restart_policy(self):
