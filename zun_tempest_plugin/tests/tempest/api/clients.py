@@ -21,6 +21,7 @@ from tempest.lib.services.image.v2 import images_client
 from tempest.lib.services.network import networks_client
 from tempest.lib.services.network import ports_client
 from tempest.lib.services.network import security_groups_client
+from tempest.lib.services.network import subnets_client
 from tempest import manager
 
 from zun_tempest_plugin.tests.tempest.api.models import container_model
@@ -74,6 +75,8 @@ class Manager(manager.Manager):
             self.auth_provider, 'network', CONF.identity.region)
         self.container_client = ZunClient(self.auth_provider)
         self.neutron_client = networks_client.NetworksClient(
+            self.auth_provider, 'network', CONF.identity.region)
+        self.subnets_client = subnets_client.SubnetsClient(
             self.auth_provider, 'network', CONF.identity.region)
 
 

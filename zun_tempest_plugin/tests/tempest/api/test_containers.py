@@ -19,6 +19,7 @@ from oslo_serialization import jsonutils as json
 from oslo_utils import encodeutils
 import six
 from tempest.lib.common.utils import data_utils
+from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 
 from zun_tempest_plugin.tests.tempest.api import clients
@@ -51,6 +52,7 @@ class TestContainer(base.BaseZunTest):
         cls.ports_client = cls.os_primary.ports_client
         cls.sgs_client = cls.os_primary.sgs_client
         cls.networks_client = cls.os_primary.neutron_client
+        cls.subnets_client = cls.os_primary.subnets_client
 
     @classmethod
     def resource_setup(cls):
@@ -237,6 +239,61 @@ class TestContainer(base.BaseZunTest):
         sgs = self._get_all_security_groups(model)
         self.assertEqual(1, len(sgs))
         self.assertEqual(sg_name, sgs[0])
+
+    @decorators.idempotent_id('f55dbe0d-3e8a-4798-9267-c9b13361e721')
+    def test_run_container_with_network(self):
+        """Test container run with the given network
+
+        This test does the following:
+        1. Create a network and its subnet
+        2. Verity the created network and its subnet.
+        3. Run a container with this network.
+        4. Verify container's addresses is in subnet's cidr.
+        """
+        test_net = self.networks_client.create_network(
+            name='test_net')['network']
+        self.assertEqual(test_net['name'], 'test_net')
+        test_subnet = self.subnets_client.create_subnet(
+            name='test_subnet', network_id=test_net['id'], ip_version=4,
+            cidr='10.1.0.0/24')['subnet']
+        self.assertEqual(test_subnet['name'], 'test_subnet')
+        self.assertEqual(test_subnet['cidr'], '10.1.0.0/24')
+        _, model = self._run_container(nets=[{'network': test_net['id']}])
+        self.assertEqual(1, len(model.addresses))
+        subnet_id = list(model.addresses.values())[0][0]['subnet_id']
+        addr = list(model.addresses.values())[0][0]['addr']
+        self.assertEqual(subnet_id, test_subnet['id'])
+        self.assertIn('10.1.0', addr)
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                        self.networks_client.delete_network, test_net['id'])
+
+    @decorators.idempotent_id('2bc86759-ffca-4b3d-bf25-4cf260a67704')
+    def test_run_container_with_shared_network(self):
+        """Test container run with the given shared network
+
+        This test does the following:
+        1. Create a network and its subnet (In admin tenant)
+        2. Verity the created network and its subnet.
+        3. Run a container with this network.
+        4. Verify container's addresses is in subnet's cidr.
+        """
+        test_net = self.os_admin.neutron_client.create_network(
+            name='test_net', shared=True)['network']
+        self.assertEqual(test_net['name'], 'test_net')
+        test_subnet = self.os_admin.subnets_client.create_subnet(
+            name='test_subnet', network_id=test_net['id'], ip_version=4,
+            cidr='10.1.0.0/24')['subnet']
+        self.assertEqual(test_subnet['name'], 'test_subnet')
+        self.assertEqual(test_subnet['cidr'], '10.1.0.0/24')
+        _, model = self._run_container(nets=[{'network': test_net['id']}])
+        self.assertEqual(1, len(model.addresses))
+        subnet_id = list(model.addresses.values())[0][0]['subnet_id']
+        addr = list(model.addresses.values())[0][0]['addr']
+        self.assertEqual(subnet_id, test_subnet['id'])
+        self.assertIn('10.1.0', addr)
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                        self.os_admin.neutron_client.delete_network,
+                        test_net['id'])
 
     @decorators.idempotent_id('c3f02fa0-fdfb-49fc-95e2-6e4dc982f9be')
     def test_commit_container(self):
