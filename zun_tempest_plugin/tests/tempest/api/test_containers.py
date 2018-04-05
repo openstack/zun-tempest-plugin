@@ -391,6 +391,7 @@ class TestContainer(base.BaseZunTest):
                                                      docker_base_url)
         self._assert_resource_constraints(container, cpu=0.2, memory=200)
 
+    @decorators.skip_because(bug="1759459")
     @decorators.idempotent_id('b218bea7-f19b-499f-9819-c7021ffc59f4')
     def test_rename_container(self):
         container1_name = data_utils.rand_name('container1')
