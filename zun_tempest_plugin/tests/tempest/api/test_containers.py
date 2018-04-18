@@ -428,6 +428,7 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual(200, resp.status)
         self.assertTrue('hello' in encodeutils.safe_decode(body))
 
+    @decorators.skip_because(bug="1764923")
     @decorators.idempotent_id('d383f359-3ebd-40ef-9dc5-d36922790230')
     def test_update_container(self):
         _, model = self._run_container(cpu=0.1, memory=100)
