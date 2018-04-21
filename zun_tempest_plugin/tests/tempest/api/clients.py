@@ -24,6 +24,7 @@ from tempest.lib.services.network import security_groups_client
 from tempest.lib.services.network import subnets_client
 from tempest import manager
 
+from zun_tempest_plugin.tests.tempest.api.models import capsule_model
 from zun_tempest_plugin.tests.tempest.api.models import container_model
 from zun_tempest_plugin.tests.tempest.api.models import service_model
 from zun_tempest_plugin.tests.tempest import utils
@@ -156,6 +157,22 @@ class ZunClient(rest_client.RestClient):
     @classmethod
     def services_uri(cls):
         url = "/services/"
+        return url
+
+    @classmethod
+    def capsules_uri(cls):
+        url = "/capsules/"
+        return url
+
+    @classmethod
+    def capsule_uri(cls, capsule_id, params=None):
+        """Construct capsule uri
+
+        """
+        url = "{0}/{1}".format(cls.capsules_uri(), capsule_id)
+        if params:
+            url = cls.add_params(url, params)
+
         return url
 
     def post_container(self, model, **kwargs):
@@ -298,6 +315,31 @@ class ZunClient(rest_client.RestClient):
         return self.get(
             self.container_uri(container_id, action='get_archive',
                                params=params), None, **kwargs)
+
+    def post_capsule(self, model, **kwargs):
+        """Makes POST /capsules request
+
+        """
+        resp, body = self.post(
+            self.capsules_uri(),
+            body=model.to_json(), **kwargs)
+        return self.deserialize(resp, body, capsule_model.CapsuleEntity)
+
+    def ensure_capsule_in_desired_state(self, capsule_id, status):
+        def is_capsule_in_desired_state():
+            _, capsule = self.get_capsule(capsule_id)
+            if capsule.status == status:
+                return True
+            else:
+                return False
+        utils.wait_for_condition(is_capsule_in_desired_state, timeout=120)
+
+    def get_capsule(self, capsule_id, params=None):
+        resp, body = self.get(self.capsule_uri(capsule_id, params=params))
+        return self.deserialize(resp, body, capsule_model.CapsuleEntity)
+
+    def delete_capsule(self, capsule_id, params=None):
+        return self.delete(self.capsule_uri(capsule_id, params=params))
 
 
 @contextlib.contextmanager
