@@ -2,8 +2,8 @@
 Team and repository tags
 ========================
 
-.. image:: http://governance.openstack.org/badges/zun-tempest-plugin.svg
-    :target: http://governance.openstack.org/reference/tags/index.html
+.. image:: http://governance.openstack.org/tc/badges/zun-tempest-plugin.svg
+    :target: http://governance.openstack.org/tc/reference/tags/index.html
 
 ==========================
 Tempest Integration of Zun
