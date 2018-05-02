@@ -34,4 +34,4 @@ Run this command::
 
 To run a single test case, run with the test case name, for example::
 
-    $ tox -e all-plugin -- zun_tempest_plugin.tests.tempest.api.test_containers.test_list_containers
+    $ tox -e all-plugin -- zun_tempest_plugin.tests.tempest.api.test_containers.TestContainer.test_list_containers
