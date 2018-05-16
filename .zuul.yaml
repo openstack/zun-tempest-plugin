@@ -1,11 +1,20 @@
+- job:
+    name: zun-tempest-py35-docker-sql-queens
+    parent: zun-tempest-py35-docker-sql
+    override-checkout: stable/queens
+    vars:
+      branch_override: stable/queens
+
 - project:
     check:
       jobs:
         - zun-tempest-docker-sql
         - zun-tempest-py35-docker-sql
+        - zun-tempest-py35-docker-sql-queens
         - zun-tempest-docker-etcd
         - zun-tempest-multinode-docker-sql
     gate:
       jobs:
         - zun-tempest-docker-sql
         - zun-tempest-py35-docker-sql
+        - zun-tempest-py35-docker-sql-queens
