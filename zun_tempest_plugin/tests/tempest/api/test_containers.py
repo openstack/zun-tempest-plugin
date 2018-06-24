@@ -53,6 +53,7 @@ class TestContainer(base.BaseZunTest):
         cls.sgs_client = cls.os_primary.sgs_client
         cls.networks_client = cls.os_primary.neutron_client
         cls.subnets_client = cls.os_primary.subnets_client
+        cls.vol_client = cls.os_primary.vol_client
 
     @classmethod
     def resource_setup(cls):
@@ -294,6 +295,55 @@ class TestContainer(base.BaseZunTest):
         self.addCleanup(test_utils.call_and_ignore_notfound_exc,
                         self.os_admin.neutron_client.delete_network,
                         test_net['id'])
+
+    @decorators.idempotent_id('7a947d75-ab23-439a-bd94-f6e219f716a9')
+    def test_run_container_with_cinder_volumes(self):
+        """Tests the following:
+
+        1. Create a volume in cinder.
+        2. Run a container with the volume mounted into a path in file system.
+        3. Execute a command in the container to write some data to the volume.
+        4. Delete the container (the volume is untouched).
+        5. Create a new container with the same volume mounted.
+        6. Execute a command in the container to read data from the volume.
+        7. Assert the data read from the volume is the same as the data
+           written in before.
+        """
+        # create a volume in cinder
+        volume = self.vol_client.create_volume(
+            name=data_utils.rand_name(), size=1)['volume']
+        volume_id = volume['id']
+
+        # create a container with the volume
+        container_path = '/data'
+        container_file = '/data/testfile'
+        _, model = self._run_container(mounts=[{
+            'source': volume_id, 'destination': container_path}])
+        volume = self.vol_client.show_volume(volume_id)['volume']
+        self.assertEqual('in-use', volume['status'])
+        # write data into the volume
+        resp, _ = self.container_client.exec_container(
+            model.uuid,
+            command="/bin/sh -c 'echo hello > %s'" % container_file)
+        self.assertEqual(200, resp.status)
+        # delete the container
+        resp, _ = self.container_client.delete_container(
+            model.uuid, params={'stop': True})
+        self.assertEqual(204, resp.status)
+        self.container_client.ensure_container_deleted(model.uuid)
+        volume = self.vol_client.show_volume(volume_id)['volume']
+        self.assertEqual('available', volume['status'])
+
+        # create another container with the same volume
+        _, model = self._run_container(mounts=[{
+            'source': volume_id, 'destination': container_path}])
+        volume = self.vol_client.show_volume(volume_id)['volume']
+        self.assertEqual('in-use', volume['status'])
+        # read data from the volume
+        resp, body = self.container_client.exec_container(
+            model.uuid, command='cat %s' % container_file)
+        self.assertEqual(200, resp.status)
+        self.assertTrue('hello' in encodeutils.safe_decode(body))
 
     @decorators.idempotent_id('c3f02fa0-fdfb-49fc-95e2-6e4dc982f9be')
     def test_commit_container(self):
