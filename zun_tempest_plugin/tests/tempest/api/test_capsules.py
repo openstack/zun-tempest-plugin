@@ -10,6 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 
 from zun_tempest_plugin.tests.tempest.api import clients
@@ -99,3 +100,52 @@ class TestCapsule(base.BaseZunTest):
         self.assertEqual('Running', model.status)
         # TODO(hongbin): verify all containers are running
         return resp, model
+
+    @decorators.idempotent_id('b7e79a0b-c09e-4539-886f-a9f33ae15620')
+    def test_create_capsule_full(self):
+        capsule_data = {
+            "template": {
+                "capsuleVersion": "beta",
+                "kind": "capsule",
+                "metadata": {
+                    "labels": {
+                        "app": "web",
+                        "app1": "web1"
+                    },
+                    "name": data_utils.rand_name('capsule')
+                },
+                "spec": {
+                    "restartPolicy": "Always",
+                    "containers": [
+                        {
+                            "command": [
+                                "/bin/bash"
+                            ],
+                            "env": {
+                                "ENV1": "/usr/local/bin",
+                                "ENV2": "/usr/bin"
+                            },
+                            "image": "ubuntu",
+                            "imagePullPolicy": "ifnotpresent",
+                            "ports": [
+                                {
+                                    "containerPort": 80,
+                                    "hostPort": 80,
+                                    "name": "nginx-port",
+                                    "protocol": "TCP"
+                                }
+                            ],
+                            "resources": {
+                                "requests": {
+                                    "cpu": 1,
+                                    "memory": 256
+                                }
+                            },
+                            "workDir": "/root"
+                        }
+                    ]
+                }
+            }
+        }
+
+        self._create_capsule(data=capsule_data)

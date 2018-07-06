@@ -116,9 +116,9 @@ def container_remove_sg_data(**kwargs):
     return model
 
 
-def capsule_data(default_data=None, **kwargs):
-    if default_data is None:
-        default_data = {
+def capsule_data(data=None, **kwargs):
+    if data is None:
+        data = {
             'template': {
                 'kind': 'capsule',
                 'capsuleVersion': 'beta',
@@ -130,6 +130,6 @@ def capsule_data(default_data=None, **kwargs):
                 }
             }
         }
-    default_data.update(kwargs)
-    model = capsule_model.CapsuleEntity.from_dict(default_data)
+    data.update(kwargs)
+    model = capsule_model.CapsuleEntity.from_dict(data)
     return model
