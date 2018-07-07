@@ -396,7 +396,6 @@ class TestContainer(base.BaseZunTest):
 
         utils.wait_for_condition(is_image_in_desired_state)
 
-    @decorators.skip_because(bug="1758754")
     @decorators.idempotent_id('3fa024ef-aba1-48fe-9682-0d6b7854faa3')
     def test_start_stop_container(self):
         _, model = self._run_container()
@@ -444,7 +443,6 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual('Stopped',
                          self._get_container_state(model))
 
-    @decorators.skip_because(bug="1758754")
     @decorators.idempotent_id('c2e54321-0a70-4331-ba62-9dcaa75ac250')
     def test_reboot_container(self):
         _, model = self._run_container()
