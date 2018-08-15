@@ -76,7 +76,7 @@ class Manager(manager.Manager):
         self.sgs_client = security_groups_client.SecurityGroupsClient(
             self.auth_provider, 'network', CONF.identity.region)
         self.vol_client = volumes_client.VolumesClient(
-            self.auth_provider, 'volume', CONF.identity.region)
+            self.auth_provider, 'volumev3', CONF.identity.region)
         self.container_client = ZunClient(self.auth_provider)
         self.neutron_client = networks_client.NetworksClient(
             self.auth_provider, 'network', CONF.identity.region)
