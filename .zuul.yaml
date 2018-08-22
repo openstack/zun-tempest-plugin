@@ -6,6 +6,10 @@
       branch_override: stable/queens
 
 - project:
+    templates:
+      - check-requirements
+      - publish-openstack-sphinx-docs
+      - tempest-plugin-jobs
     check:
       jobs:
         - zun-tempest-docker-sql
@@ -14,6 +18,7 @@
         - zun-tempest-docker-etcd
         - zun-tempest-multinode-docker-sql
     gate:
+      queue: zun
       jobs:
         - zun-tempest-docker-sql
         - zun-tempest-py35-docker-sql
