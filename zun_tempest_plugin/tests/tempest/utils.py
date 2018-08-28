@@ -10,7 +10,16 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import base64
+import functools
 import time
+
+import six
+from tempest import config
+from tempest.lib.common import api_version_utils
+
+
+CONF = config.CONF
 
 
 def wait_for_condition(condition, interval=2, timeout=60):
@@ -23,3 +32,36 @@ def wait_for_condition(condition, interval=2, timeout=60):
         time.sleep(interval)
     raise Exception(("Timed out after %s seconds.  Started on %s and ended "
                      "on %s") % (timeout, start_time, end_time))
+
+
+def requires_microversion(cls_min_version, min_version, max_version='latest',
+                          **kwargs):
+    """A decorator to skip tests if a microversion is not matched
+
+    @param extension
+    @param service
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*func_args, **func_kwargs):
+            selected_version = api_version_utils.select_request_microversion(
+                cls_min_version,
+                CONF.container_service.min_microversion)
+            api_version_utils.check_skip_with_microversion(
+                min_version,
+                max_version,
+                selected_version,
+                selected_version)
+            return func(*func_args, **func_kwargs)
+        return wrapper
+    return decorator
+
+
+def encode_file_data(data):
+    if six.PY3 and isinstance(data, str):
+        data = data.encode('utf-8')
+    return base64.b64encode(data).decode('utf-8')
+
+
+def decode_file_data(data):
+    return base64.b64decode(data)

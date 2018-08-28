@@ -642,6 +642,7 @@ class TestContainer(base.BaseZunTest):
         self._ensure_network_attached(model, network)
 
     @decorators.idempotent_id('037d800c-2262-4e15-90cd-95292b5ef958')
+    @utils.requires_microversion(min_microversion, '1.1', '1.24')
     def test_put_and_get_archive_from_container(self):
         _, model = self._run_container()
         self.assertEqual(1, len(model.addresses))
@@ -671,6 +672,45 @@ class TestContainer(base.BaseZunTest):
         # Get content
         body = json.loads(body)
         tardata = BytesIO(body['data'].encode())
+        with tarfile.open(fileobj=tardata, mode='r') as tar:
+            untar_content = tar.extractfile('test.txt').read()
+
+        self.assertEqual(file_content, untar_content.decode())
+        self.assertEqual(body['stat']['name'], tarinfo.name)
+        self.assertEqual(body['stat']['size'], tarinfo.size)
+
+    @decorators.idempotent_id('4ea3a2a5-cf89-48e7-bdd2-0bafc70ca7cb')
+    @utils.requires_microversion(min_microversion, '1.25')
+    def test_put_and_get_archive_from_container_encoded(self):
+        _, model = self._run_container()
+        self.assertEqual(1, len(model.addresses))
+
+        # Create a simple tarstream
+        file_content = 'Random text'
+
+        tarstream = BytesIO()
+        with tarfile.open(fileobj=tarstream, mode='w') as tar:
+            encoded_file_content = file_content.encode()
+            tarinfo = tarfile.TarInfo(name='test.txt')
+            tarinfo.size = len(encoded_file_content)
+            tarinfo.mtime = time.time()
+            tar.addfile(tarinfo, BytesIO(encoded_file_content))
+
+        # We're at the end of the tarstream, go back to the beginning
+        tarstream.seek(0)
+
+        req_body = json.dump_as_bytes({
+            'data': utils.encode_file_data(tarstream.getvalue())})
+        resp, _ = self.container_client.put_archive(
+            model.uuid, params={'path': '/tmp'}, body=req_body)
+        self.assertEqual(200, resp.status)
+        resp, body = self.container_client.get_archive(
+            model.uuid, params={'path': '/tmp/test.txt'})
+        self.assertEqual(200, resp.status)
+
+        # Get content
+        body = json.loads(body)
+        tardata = BytesIO(utils.decode_file_data(body['data']))
         with tarfile.open(fileobj=tardata, mode='r') as tar:
             untar_content = tar.extractfile('test.txt').read()
 
