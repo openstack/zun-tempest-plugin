@@ -53,7 +53,7 @@ def container_data(default_data=None, **kwargs):
         default_data = {
             'name': data_utils.rand_name('container'),
             'image': 'cirros:latest',
-            'command': 'sleep 10000',
+            'command': ['sleep', '10000'],
             'cpu': 0.1,
             'memory': '100',
             'environment': {},

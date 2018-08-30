@@ -31,7 +31,7 @@ from zun_tempest_plugin.tests.tempest import utils
 class TestContainer(base.BaseZunTest):
 
     credentials = ['primary', 'admin']
-    min_microversion = '1.12'
+    min_microversion = '1.20'
 
     @classmethod
     def get_client_manager(cls, credential_type=None, roles=None,
@@ -357,7 +357,7 @@ class TestContainer(base.BaseZunTest):
         5. Verify the pre-created file is there
         """
         # This command creates a file inside the container
-        command = "/bin/sh -c 'echo hello > testfile;sleep 1000000'"
+        command = ["/bin/sh", "-c", "echo hello > testfile;sleep 1000000"]
         _, model = self._run_container(command=command)
 
         try:
@@ -367,7 +367,7 @@ class TestContainer(base.BaseZunTest):
             self._ensure_image_active('myrepo')
 
             # This command outputs the content of pre-created file
-            command = "/bin/sh -c 'cat testfile;sleep 1000000'"
+            command = ["/bin/sh", "-c", "cat testfile;sleep 1000000"]
             _, model = self._run_container(
                 image="myrepo", image_driver="glance", command=command)
             resp, body = self.container_client.logs_container(model.uuid)
@@ -473,7 +473,7 @@ class TestContainer(base.BaseZunTest):
     @decorators.idempotent_id('a912ca23-14e7-442f-ab15-e05aaa315204')
     def test_logs_container(self):
         _, model = self._run_container(
-            command="/bin/sh -c 'echo hello;sleep 1000000'")
+            command=["/bin/sh", "-c", "echo hello;sleep 1000000"])
         resp, body = self.container_client.logs_container(model.uuid)
         self.assertEqual(200, resp.status)
         self.assertTrue('hello' in encodeutils.safe_decode(body))
@@ -515,7 +515,7 @@ class TestContainer(base.BaseZunTest):
     @decorators.idempotent_id('142b7716-0b21-41ed-b47d-a42fba75636b')
     def test_top_container(self):
         _, model = self._run_container(
-            command="/bin/sh -c 'sleep 1000000'")
+            command=["/bin/sh", "-c", "sleep 1000000"])
         resp, body = self.container_client.top_container(model.uuid)
         self.assertEqual(200, resp.status)
         self.assertTrue('sleep 1000000' in encodeutils.safe_decode(body))
@@ -532,45 +532,6 @@ class TestContainer(base.BaseZunTest):
         self.assertTrue('MEM USAGE(MiB)' in encodeutils.safe_decode(body))
         self.assertTrue('MEM %' in encodeutils.safe_decode(body))
         self.assertTrue('BLOCK I/O(B)' in encodeutils.safe_decode(body))
-
-    @decorators.idempotent_id('b3b9cf17-82ad-4c1b-a4af-8210a778a33e')
-    def test_add_and_remove_sg_to_container(self):
-        _, model = self._run_container()
-        sgs = self._get_all_security_groups(model)
-        self.assertEqual(1, len(sgs))
-        self.assertEqual('default', sgs[0])
-        sg_name = data_utils.rand_name('test_add_sg')
-        sg = self.sgs_client.create_security_group(name=sg_name)
-        self.addCleanup(self.sgs_client.delete_security_group,
-                        sg['security_group']['id'])
-        gen_model = datagen.container_add_sg_data(name=sg_name)
-        resp, body = self.container_client.add_security_group(
-            model.uuid, gen_model)
-        self.assertEqual(202, resp.status)
-
-        def assert_security_group_is_added():
-            sgs = self._get_all_security_groups(model)
-            if len(sgs) == 2:
-                self.assertTrue('default' in sgs)
-                self.assertTrue(sg_name in sgs)
-                return True
-            else:
-                return False
-
-        utils.wait_for_condition(assert_security_group_is_added)
-
-        gen_model = datagen.container_remove_sg_data(name=sg_name)
-        resp1, body = self.container_client.remove_security_group(
-            model.uuid, gen_model)
-        self.assertEqual(202, resp1.status)
-
-        def assert_security_group_is_removed():
-            sgs = self._get_all_security_groups(model)
-            if sg_name not in sgs:
-                return True
-            else:
-                return False
-        utils.wait_for_condition(assert_security_group_is_removed)
 
     def _assert_resource_constraints(self, container, cpu=None, memory=None):
         if cpu is not None:
