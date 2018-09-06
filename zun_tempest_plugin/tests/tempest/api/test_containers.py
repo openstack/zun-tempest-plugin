@@ -345,6 +345,22 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual(200, resp.status)
         self.assertTrue('hello' in encodeutils.safe_decode(body))
 
+    @decorators.idempotent_id('8a4395ff-3a91-4a35-bd71-5248afc6c465')
+    @utils.requires_microversion(min_microversion, '1.25')
+    def test_run_container_with_injected_file(self):
+        # create a container with the volume
+        file_content = 'Random text'
+        container_file = '/data/testfile'
+        _, model = self._run_container(mounts=[{
+            'type': 'bind',
+            'source': utils.encode_file_data(file_content),
+            'destination': container_file}])
+        # read data from the injected file
+        resp, body = self.container_client.exec_container(
+            model.uuid, command='cat %s' % container_file)
+        self.assertEqual(200, resp.status)
+        self.assertTrue(file_content in encodeutils.safe_decode(body))
+
     @decorators.idempotent_id('c3f02fa0-fdfb-49fc-95e2-6e4dc982f9be')
     def test_commit_container(self):
         """Test container snapshot
