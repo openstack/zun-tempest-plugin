@@ -21,6 +21,7 @@ import six
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
+from tempest.lib import exceptions as lib_exc
 
 from zun_tempest_plugin.tests.tempest.api import clients
 from zun_tempest_plugin.tests.tempest.api.common import datagen
@@ -344,6 +345,55 @@ class TestContainer(base.BaseZunTest):
             model.uuid, command='cat %s' % container_file)
         self.assertEqual(200, resp.status)
         self.assertTrue('hello' in encodeutils.safe_decode(body))
+
+    @decorators.idempotent_id('e49231b2-b095-40d3-9b54-33bb1b371cbe')
+    def test_run_container_with_cinder_volume_dynamic_created(self):
+        """Tests the following:
+
+        1. Run a container with a dynamic-created volume mounted into a path
+           in file system.
+        2. Assert a volume is created in cinder with an attachment to
+           the container.
+        3. Execute a command in the container to write some data to the volume.
+        4. Execute a command in the container to read data from the volume.
+        5. Assert the data read from the volume is the same as the data
+           written in before.
+        6. Delete the container.
+        7. Assert the cinder volume is removed in cinder.
+        """
+        # create a container with the volume
+        container_path = '/data'
+        container_file = '/data/testfile'
+        _, model = self._run_container(mounts=[{
+            'size': 1, 'destination': container_path}])
+        # assert a volume is created in cinder with 'in-use' status.
+        volume_id = None
+        volumes = self.vol_client.list_volumes(detail=True)['volumes']
+        for volume in volumes:
+            for attachment in volume['attachments']:
+                if attachment['server_id'] == model.uuid:
+                    volume_id = volume['id']
+                    break
+        self.assertIsNotNone(volume_id)
+        volume = self.vol_client.show_volume(volume_id)['volume']
+        self.assertEqual('in-use', volume['status'])
+        # write data into the volume
+        resp, _ = self.container_client.exec_container(
+            model.uuid,
+            command="/bin/sh -c 'echo hello > %s'" % container_file)
+        self.assertEqual(200, resp.status)
+        # read data from the volume
+        resp, body = self.container_client.exec_container(
+            model.uuid, command='cat %s' % container_file)
+        self.assertEqual(200, resp.status)
+        self.assertTrue('hello' in encodeutils.safe_decode(body))
+        # delete the container and assert the volume is removed.
+        self.container_client.delete_container(
+            model.uuid, params={'stop': True})
+        self.container_client.ensure_container_deleted(model.uuid)
+        self.assertRaises(lib_exc.NotFound,
+                          self.vol_client.show_volume,
+                          volume_id)
 
     @decorators.idempotent_id('8a4395ff-3a91-4a35-bd71-5248afc6c465')
     @utils.requires_microversion(min_microversion, '1.25')
