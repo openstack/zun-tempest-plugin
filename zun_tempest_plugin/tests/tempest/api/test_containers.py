@@ -76,7 +76,7 @@ class TestContainer(base.BaseZunTest):
                 #               we have to be admin to do this action.
                 self.os_admin.container_client.delete_container(
                     c['uuid'],
-                    params={'force': True, 'all_projects': True})
+                    params={'stop': True, 'all_projects': True})
                 self.container_client.ensure_container_deleted(c['uuid'])
 
         # cleanup the network resources
