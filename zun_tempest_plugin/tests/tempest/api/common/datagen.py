@@ -72,6 +72,30 @@ def container_data(default_data=None, **kwargs):
     return model
 
 
+def container_data_legacy(default_data=None, **kwargs):
+    if default_data is None:
+        default_data = {
+            'name': data_utils.rand_name('container'),
+            'image': 'cirros:latest',
+            'command': 'sleep 10000',
+            'cpu': 0.1,
+            'memory': '100',
+            'environment': {},
+            'labels': {},
+            'image_driver': 'docker',
+            'image_pull_policy': 'always',
+            'restart_policy': {'Name': 'no'},
+            'workdir': '/',
+            'interactive': False,
+            'security_groups': ['default'],
+        }
+
+    default_data.update(kwargs)
+    model = container_model.ContainerEntity.from_dict(default_data)
+
+    return model
+
+
 def container_patch_data(**kwargs):
     data = {
         'cpu': 0.2,

@@ -34,8 +34,7 @@ def wait_for_condition(condition, interval=2, timeout=60):
                      "on %s") % (timeout, start_time, end_time))
 
 
-def requires_microversion(cls_min_version, min_version, max_version='latest',
-                          **kwargs):
+def requires_microversion(min_version, max_version='latest', **kwargs):
     """A decorator to skip tests if a microversion is not matched
 
     @param extension
@@ -43,16 +42,16 @@ def requires_microversion(cls_min_version, min_version, max_version='latest',
     """
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(*func_args, **func_kwargs):
+        def wrapper(self, *func_args, **func_kwargs):
             selected_version = api_version_utils.select_request_microversion(
-                cls_min_version,
+                self.request_microversion,
                 CONF.container_service.min_microversion)
             api_version_utils.check_skip_with_microversion(
                 min_version,
                 max_version,
                 selected_version,
                 selected_version)
-            return func(*func_args, **func_kwargs)
+            return func(self, *func_args, **func_kwargs)
         return wrapper
     return decorator
 

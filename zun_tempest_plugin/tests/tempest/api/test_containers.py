@@ -223,6 +223,7 @@ class TestContainer(base.BaseZunTest):
         self.assertIs(True, stdin_open)
 
     @decorators.idempotent_id('f181eeda-a9d1-4b2e-9746-d6634ca81e2f')
+    @utils.requires_microversion('1.20')
     def test_run_container_without_security_groups(self):
         gen_model = datagen.container_data()
         delattr(gen_model, 'security_groups')
@@ -347,6 +348,7 @@ class TestContainer(base.BaseZunTest):
         self.assertTrue('hello' in encodeutils.safe_decode(body))
 
     @decorators.idempotent_id('e49231b2-b095-40d3-9b54-33bb1b371cbe')
+    @utils.requires_microversion('1.20')
     def test_run_container_with_cinder_volume_dynamic_created(self):
         """Tests the following:
 
@@ -396,7 +398,7 @@ class TestContainer(base.BaseZunTest):
                           volume_id)
 
     @decorators.idempotent_id('8a4395ff-3a91-4a35-bd71-5248afc6c465')
-    @utils.requires_microversion(min_microversion, '1.25')
+    @utils.requires_microversion('1.25')
     def test_run_container_with_injected_file(self):
         # create a container with the volume
         file_content = 'Random text'
@@ -545,6 +547,7 @@ class TestContainer(base.BaseZunTest):
         self.assertTrue('hello' in encodeutils.safe_decode(body))
 
     @decorators.idempotent_id('d383f359-3ebd-40ef-9dc5-d36922790230')
+    @utils.requires_microversion('1.14')
     def test_update_container(self):
         _, model = self._run_container(cpu=0.1, memory=100)
         self.assertEqual('100', model.memory)
@@ -565,6 +568,7 @@ class TestContainer(base.BaseZunTest):
         self._assert_resource_constraints(container, cpu=0.2, memory=200)
 
     @decorators.idempotent_id('b218bea7-f19b-499f-9819-c7021ffc59f4')
+    @utils.requires_microversion('1.14')
     def test_rename_container(self):
         container1_name = data_utils.rand_name('container1')
         _, model = self._run_container(name=container1_name)
@@ -706,7 +710,7 @@ class TestContainer(base.BaseZunTest):
         self._ensure_network_attached(model, network)
 
     @decorators.idempotent_id('037d800c-2262-4e15-90cd-95292b5ef958')
-    @utils.requires_microversion(min_microversion, '1.1', '1.24')
+    @utils.requires_microversion('1.1', '1.24')
     def test_put_and_get_archive_from_container(self):
         _, model = self._run_container()
         self.assertEqual(1, len(model.addresses))
@@ -744,7 +748,7 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual(body['stat']['size'], tarinfo.size)
 
     @decorators.idempotent_id('4ea3a2a5-cf89-48e7-bdd2-0bafc70ca7cb')
-    @utils.requires_microversion(min_microversion, '1.25')
+    @utils.requires_microversion('1.25')
     def test_put_and_get_archive_from_container_encoded(self):
         _, model = self._run_container()
         self.assertEqual(1, len(model.addresses))
@@ -801,3 +805,48 @@ class TestContainer(base.BaseZunTest):
                 return False
 
         utils.wait_for_condition(is_network_attached)
+
+
+class TestContainerLegacy(TestContainer):
+
+    credentials = ['primary', 'admin']
+    min_microversion = '1.1'
+    max_microversion = '1.19'
+
+    def _run_container(self, gen_model=None, **kwargs):
+        if 'command' in kwargs and isinstance(kwargs['command'], list):
+            command = ' '.join(["'%s'" % c for c in kwargs['command']])
+            kwargs['command'] = command
+        if gen_model is None:
+            gen_model = datagen.container_data_legacy(**kwargs)
+        resp, model = self.container_client.run_container(gen_model)
+        self.containers.append(model.uuid)
+        self.assertEqual(202, resp.status)
+        # Wait for container to started
+        self.container_client.ensure_container_in_desired_state(
+            model.uuid, 'Running')
+
+        # Assert the container is started
+        resp, model = self.container_client.get_container(model.uuid)
+        self.assertEqual('Running', model.status)
+        self.assertEqual('Running', self._get_container_state(model))
+        return resp, model
+
+    def _create_container(self, **kwargs):
+        if 'command' in kwargs and isinstance(kwargs['command'], list):
+            command = ' '.join(["'%s'" % c for c in kwargs['command']])
+            kwargs['command'] = command
+        gen_model = datagen.container_data_legacy(**kwargs)
+        resp, model = self.container_client.post_container(gen_model)
+        self.containers.append(model.uuid)
+        self.assertEqual(202, resp.status)
+        # Wait for container to finish creation
+        self.container_client.ensure_container_in_desired_state(
+            model.uuid, 'Created')
+
+        # Assert the container is created
+        resp, model = self.container_client.get_container(model.uuid)
+        self.assertEqual(200, resp.status)
+        self.assertEqual('Created', model.status)
+        self.assertEqual('Created', self._get_container_state(model))
+        return resp, model
