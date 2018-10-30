@@ -178,11 +178,86 @@ class TestContainer(base.BaseZunTest):
         port_subnet = port['fixed_ips'][0]['subnet_id']
 
         _, model = self._run_container(nets=[{'port': port['id']}])
-        network_id = tenant_network['id']
-        self.assertEqual(port['id'], model.addresses[network_id][0]['port'])
-        self.assertEqual(port_address, model.addresses[network_id][0]['addr'])
-        self.assertEqual(port_subnet,
-                         model.addresses[network_id][0]['subnet_id'])
+        address = {'port': port['id'],
+                   'addr': port_address,
+                   'subnet_id': port_subnet}
+        self._assert_container_has_address(model, address,
+                                           network_id=tenant_network['id'])
+
+    @decorators.idempotent_id('cfa24356-30fd-42b7-92c7-bbf01bcaf6eb')
+    def test_run_container_with_port_in_dual_net(self):
+        network = self.create_network()
+        _, subnetv4 = self._create_v4_subnet_and_pool(network)
+        _, subnetv6 = self._create_v6_subnet_and_pool(network)
+        port = self.create_port(network)
+        ipv4_address = None
+        ipv6_address = None
+        for fixed_ip in port['fixed_ips']:
+            if fixed_ip['subnet_id'] == subnetv4['id']:
+                ipv4_address = fixed_ip['ip_address']
+            elif fixed_ip['subnet_id'] == subnetv6['id']:
+                ipv6_address = fixed_ip['ip_address']
+        self.assertIsNotNone(ipv4_address)
+        self.assertIsNotNone(ipv6_address)
+
+        _, model = self._run_container(nets=[{'port': port['id']}])
+
+        self.assertEqual(2, len(model.addresses[network['id']]))
+        address = {'port': port['id'],
+                   'addr': ipv4_address,
+                   'subnet_id': subnetv4['id'],
+                   'version': 4}
+        self._assert_container_has_address(model, address)
+        address = {'port': port['id'],
+                   'addr': ipv6_address,
+                   'subnet_id': subnetv6['id'],
+                   'version': 6}
+        self._assert_container_has_address(model, address)
+
+    def _assert_container_has_address(self, container, address,
+                                      network_id=None):
+        self.assertLessEqual(1, len(container.addresses))
+        if network_id is None:
+            network_id = list(container.addresses.keys())[0]
+        self.assertIn(network_id, container.addresses)
+        for addr in container.addresses[network_id]:
+            if six.viewitems(address) <= six.viewitems(addr):
+                break
+        else:
+            self.fail('Address %s is not found in container %s.' %
+                      (address, container))
+
+    def _create_v4_subnet_and_pool(self, network, subnet_values=None,
+                                   pool_values=None):
+        pool_kwargs = {'prefixes': [u'10.11.12.0/24'],
+                       'min_prefixlen': '28'}
+        if pool_values:
+            pool_kwargs.update(pool_values)
+        created_subnetpool = self.create_subnetpool(**pool_kwargs)
+        pool_id = created_subnetpool['id']
+
+        subnet_kwargs = {'subnetpool_id': pool_id,
+                         'ip_version': 4}
+        if subnet_values:
+            subnet_kwargs.update(subnet_values)
+        subnet = self.create_subnet(network, **subnet_kwargs)
+        return pool_id, subnet
+
+    def _create_v6_subnet_and_pool(self, network, subnet_values=None,
+                                   pool_values=None):
+        pool_kwargs = {'prefixes': [u'2001:db8:3::/48'],
+                       'min_prefixlen': '64'}
+        if pool_values:
+            pool_kwargs.update(pool_values)
+        created_subnetpool = self.create_subnetpool(**pool_kwargs)
+        pool_id = created_subnetpool['id']
+
+        subnet_kwargs = {'subnetpool_id': pool_id,
+                         'ip_version': 6}
+        if subnet_values:
+            subnet_kwargs.update(subnet_values)
+        subnet = self.create_subnet(network, **subnet_kwargs)
+        return pool_id, subnet
 
     @decorators.idempotent_id('9fc7fec0-e1a9-4f65-a5a6-dba425c1607c')
     def test_run_container_with_restart_policy(self):

@@ -21,6 +21,7 @@ from tempest.lib.services.image.v2 import images_client
 from tempest.lib.services.network import networks_client
 from tempest.lib.services.network import ports_client
 from tempest.lib.services.network import security_groups_client
+from tempest.lib.services.network import subnetpools_client
 from tempest.lib.services.network import subnets_client
 from tempest.lib.services.volume.v3 import volumes_client
 from tempest import manager
@@ -81,6 +82,8 @@ class Manager(manager.Manager):
         self.neutron_client = networks_client.NetworksClient(
             self.auth_provider, 'network', CONF.identity.region)
         self.subnets_client = subnets_client.SubnetsClient(
+            self.auth_provider, 'network', CONF.identity.region)
+        self.subnetpools_client = subnetpools_client.SubnetpoolsClient(
             self.auth_provider, 'network', CONF.identity.region)
 
 
