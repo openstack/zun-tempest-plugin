@@ -51,7 +51,6 @@ class TestContainer(base.BaseZunTest):
         cls.images_client = cls.os_primary.images_client
         cls.ports_client = cls.os_primary.ports_client
         cls.sgs_client = cls.os_primary.sgs_client
-        cls.subnets_client = cls.os_primary.subnets_client
         cls.vol_client = cls.os_primary.vol_client
 
     @classmethod
@@ -258,9 +257,8 @@ class TestContainer(base.BaseZunTest):
         """
         test_net = self.create_network(name='test_net')
         self.assertEqual(test_net['name'], 'test_net')
-        test_subnet = self.subnets_client.create_subnet(
-            name='test_subnet', network_id=test_net['id'], ip_version=4,
-            cidr='10.1.0.0/24')['subnet']
+        test_subnet = self.create_subnet(
+            test_net, name='test_subnet', cidr='10.1.0.0/24')
         self.assertEqual(test_subnet['name'], 'test_subnet')
         self.assertEqual(test_subnet['cidr'], '10.1.0.0/24')
         _, model = self._run_container(nets=[{'network': test_net['id']}])
@@ -284,9 +282,9 @@ class TestContainer(base.BaseZunTest):
             client=self.os_admin.neutron_client,
             name='test_net', shared=True)
         self.assertEqual(test_net['name'], 'test_net')
-        test_subnet = self.os_admin.subnets_client.create_subnet(
-            name='test_subnet', network_id=test_net['id'], ip_version=4,
-            cidr='10.1.0.0/24')['subnet']
+        test_subnet = self.create_subnet(
+            test_net, client=self.os_admin.subnets_client,
+            name='test_subnet', cidr='10.1.0.0/24')
         self.assertEqual(test_subnet['name'], 'test_subnet')
         self.assertEqual(test_subnet['cidr'], '10.1.0.0/24')
         _, model = self._run_container(nets=[{'network': test_net['id']}])

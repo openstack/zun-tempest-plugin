@@ -44,6 +44,7 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
     def setup_clients(cls):
         super(BaseZunTest, cls).setup_clients()
         cls.networks_client = cls.os_primary.neutron_client
+        cls.subnets_client = cls.os_primary.subnets_client
 
     @classmethod
     def setup_credentials(cls):
@@ -79,3 +80,14 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
         network = client.create_network(**kwargs)['network']
         self.addCleanup(client.delete_network, network['id'])
         return network
+
+    def create_subnet(self, network, client=None, **values):
+        kwargs = {'name': data_utils.rand_name('test-subnet'),
+                  'network_id': network['id'],
+                  'ip_version': 4}
+        if values:
+            kwargs.update(values)
+        client = client or self.subnets_client
+        subnet = client.create_subnet(**kwargs)['subnet']
+        self.addCleanup(client.delete_subnet, subnet['id'])
+        return subnet
