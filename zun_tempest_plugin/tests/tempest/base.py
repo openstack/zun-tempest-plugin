@@ -14,6 +14,7 @@
 
 from tempest import config
 from tempest.lib.common import api_version_utils
+from tempest.lib.common.utils import data_utils
 from tempest import test
 
 from zun_tempest_plugin.tests.tempest.api import api_microversion_fixture
@@ -42,7 +43,7 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
     @classmethod
     def setup_clients(cls):
         super(BaseZunTest, cls).setup_clients()
-        pass
+        cls.networks_client = cls.os_primary.neutron_client
 
     @classmethod
     def setup_credentials(cls):
@@ -69,3 +70,12 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
         self.useFixture(api_microversion_fixture.APIMicroversionFixture(
             self.request_microversion
         ))
+
+    def create_network(self, client=None, **values):
+        kwargs = {'name': data_utils.rand_name('test-network')}
+        if values:
+            kwargs.update(values)
+        client = client or self.networks_client
+        network = client.create_network(**kwargs)['network']
+        self.addCleanup(client.delete_network, network['id'])
+        return network

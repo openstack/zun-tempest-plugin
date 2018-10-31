@@ -19,7 +19,6 @@ from oslo_serialization import jsonutils as json
 from oslo_utils import encodeutils
 import six
 from tempest.lib.common.utils import data_utils
-from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
 
@@ -52,7 +51,6 @@ class TestContainer(base.BaseZunTest):
         cls.images_client = cls.os_primary.images_client
         cls.ports_client = cls.os_primary.ports_client
         cls.sgs_client = cls.os_primary.sgs_client
-        cls.networks_client = cls.os_primary.neutron_client
         cls.subnets_client = cls.os_primary.subnets_client
         cls.vol_client = cls.os_primary.vol_client
 
@@ -258,8 +256,7 @@ class TestContainer(base.BaseZunTest):
         3. Run a container with this network.
         4. Verify container's addresses is in subnet's cidr.
         """
-        test_net = self.networks_client.create_network(
-            name='test_net')['network']
+        test_net = self.create_network(name='test_net')
         self.assertEqual(test_net['name'], 'test_net')
         test_subnet = self.subnets_client.create_subnet(
             name='test_subnet', network_id=test_net['id'], ip_version=4,
@@ -272,8 +269,6 @@ class TestContainer(base.BaseZunTest):
         addr = list(model.addresses.values())[0][0]['addr']
         self.assertEqual(subnet_id, test_subnet['id'])
         self.assertIn('10.1.0', addr)
-        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
-                        self.networks_client.delete_network, test_net['id'])
 
     @decorators.idempotent_id('2bc86759-ffca-4b3d-bf25-4cf260a67704')
     def test_run_container_with_shared_network(self):
@@ -285,8 +280,9 @@ class TestContainer(base.BaseZunTest):
         3. Run a container with this network.
         4. Verify container's addresses is in subnet's cidr.
         """
-        test_net = self.os_admin.neutron_client.create_network(
-            name='test_net', shared=True)['network']
+        test_net = self.create_network(
+            client=self.os_admin.neutron_client,
+            name='test_net', shared=True)
         self.assertEqual(test_net['name'], 'test_net')
         test_subnet = self.os_admin.subnets_client.create_subnet(
             name='test_subnet', network_id=test_net['id'], ip_version=4,
@@ -299,9 +295,6 @@ class TestContainer(base.BaseZunTest):
         addr = list(model.addresses.values())[0][0]['addr']
         self.assertEqual(subnet_id, test_subnet['id'])
         self.assertIn('10.1.0', addr)
-        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
-                        self.os_admin.neutron_client.delete_network,
-                        test_net['id'])
 
     @decorators.idempotent_id('7a947d75-ab23-439a-bd94-f6e219f716a9')
     def test_run_container_with_cinder_volumes(self):
