@@ -169,8 +169,8 @@ class TestContainer(base.BaseZunTest):
             model.uuid,
             self._get_docker_url(model))
         env = container.get('Config').get('Env')
-        self.assertTrue('key1=env1', env)
-        self.assertTrue('key2=env2', env)
+        self.assertTrue('key1=env1' in env)
+        self.assertTrue('key2=env2' in env)
 
     @decorators.idempotent_id('0e59d549-58ff-440f-8704-10e223c31cbc')
     def test_run_container_with_labels(self):
@@ -181,8 +181,7 @@ class TestContainer(base.BaseZunTest):
             model.uuid,
             self._get_docker_url(model))
         labels = container.get('Config').get('Labels')
-        self.assertTrue('key1=label1', labels)
-        self.assertTrue('key2=label2', labels)
+        self.assertEqual({'key1': 'label1', 'key2': 'label2'}, labels)
 
     @decorators.idempotent_id('8fc7fec1-e1a2-3f65-a5a6-dba425c1607c')
     def test_run_container_with_port(self):
@@ -192,11 +191,17 @@ class TestContainer(base.BaseZunTest):
             if network['project_id'] == project_id:
                 network_id = network['id']
 
-        port = self.ports_client.create_port(network_id=network_id,
-                                             name='testport')
+        port = self.ports_client.create_port(
+            network_id=network_id, name='testport')['port']
+        self.addCleanup(self.ports_client.delete_port, port['id'])
+        port_address = port['fixed_ips'][0]['ip_address']
+        port_subnet = port['fixed_ips'][0]['subnet_id']
+
         _, model = self._run_container(nets=[{'port': 'testport'}])
-        self.assertTrue('testport', model)
-        self.addCleanup(self.ports_client.delete_port, port['port']['id'])
+        self.assertEqual(port['id'], model.addresses[network_id][0]['port'])
+        self.assertEqual(port_address, model.addresses[network_id][0]['addr'])
+        self.assertEqual(port_subnet,
+                         model.addresses[network_id][0]['subnet_id'])
 
     @decorators.idempotent_id('9fc7fec0-e1a9-4f65-a5a6-dba425c1607c')
     def test_run_container_with_restart_policy(self):
@@ -208,7 +213,7 @@ class TestContainer(base.BaseZunTest):
             self._get_docker_url(model))
         policy = container.get('HostConfig').get('RestartPolicy')
         self.assertEqual('on-failure', policy['Name'])
-        self.assertTrue(2, policy['MaximumRetryCount'])
+        self.assertEqual(2, policy['MaximumRetryCount'])
 
     @decorators.idempotent_id('58585a4f-cdce-4dbd-9741-4416d1098f94')
     def test_run_container_with_interactive(self):
