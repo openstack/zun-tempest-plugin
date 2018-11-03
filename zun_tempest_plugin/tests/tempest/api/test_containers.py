@@ -46,8 +46,6 @@ class TestContainer(base.BaseZunTest):
     @classmethod
     def setup_clients(cls):
         super(TestContainer, cls).setup_clients()
-        cls.container_client = cls.os_primary.container_client
-        cls.docker_client = clients.DockerClient()
         cls.images_client = cls.os_primary.images_client
         cls.ports_client = cls.os_primary.ports_client
         cls.sgs_client = cls.os_primary.sgs_client
@@ -62,13 +60,10 @@ class TestContainer(base.BaseZunTest):
         self.containers = []
 
     def tearDown(self):
-        hosts = []
         _, model = self.os_admin.container_client.list_containers(
             params={'all_projects': True})
         for c in model.containers:
             if c['uuid'] in self.containers:
-                if c['host'] and c['host'] not in hosts:
-                    hosts.append(c['host'])
                 # NOTE(kiennt): From version 1.7, Zun disallowed non-admin
                 #               users to force delete containers. Therefore,
                 #               we have to be admin to do this action.
@@ -76,18 +71,6 @@ class TestContainer(base.BaseZunTest):
                     c['uuid'],
                     params={'stop': True, 'all_projects': True})
                 self.container_client.ensure_container_deleted(c['uuid'])
-
-        # cleanup the network resources
-        project_id = self.container_client.tenant_id
-        for host in hosts:
-            # NOTE(kiennt): Default docker remote url
-            #               Remove networks in all hosts
-            docker_base_url = self._get_docker_url(host=host)
-            networks = self.docker_client.list_networks(project_id,
-                                                        docker_base_url)
-            for network in networks:
-                self.docker_client.remove_network(network['Id'],
-                                                  docker_base_url)
 
         super(TestContainer, self).tearDown()
 

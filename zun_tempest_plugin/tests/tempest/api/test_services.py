@@ -19,6 +19,7 @@ from zun_tempest_plugin.tests.tempest import base
 
 class TestService(base.BaseZunTest):
 
+    credentials = ['primary', 'admin']
     min_microversion = '1.7'
 
     @classmethod
@@ -31,12 +32,6 @@ class TestService(base.BaseZunTest):
             force_new=force_new
         )
         return clients.Manager(manager.credentials)
-
-    @classmethod
-    def setup_clients(cls):
-
-        super(TestService, cls).setup_clients()
-        cls.container_client = cls.os_primary.container_client
 
     @classmethod
     def resource_setup(cls):

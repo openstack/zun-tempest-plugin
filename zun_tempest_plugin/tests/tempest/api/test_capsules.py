@@ -24,33 +24,6 @@ class TestCapsule(base.BaseZunTest):
     min_microversion = '1.12'
 
     @classmethod
-    def tearDownClass(cls):
-        cls.cleanup_network()
-        super(TestCapsule, cls).tearDownClass()
-
-    @classmethod
-    def cleanup_network(cls):
-        creds_provider = cls._get_credentials_provider()
-        creds = creds_provider.get_primary_creds()
-        network = getattr(creds, 'network', None)
-        if not network:
-            return
-
-        docker_base_url = cls._get_docker_url()
-        networks = cls.docker_client.list_networks(
-            network['id'], docker_auth_url=docker_base_url)
-        for network in networks:
-            cls.docker_client.remove_network(
-                network['Id'], docker_auth_url=docker_base_url)
-
-    @classmethod
-    def _get_docker_url(cls, host='localhost'):
-        protocol = 'tcp'
-        port = '2375'
-        base_url = '%s://%s:%s' % (protocol, host, port)
-        return base_url
-
-    @classmethod
     def get_client_manager(cls, credential_type=None, roles=None,
                            force_new=None):
         manager = super(TestCapsule, cls).get_client_manager(
@@ -63,8 +36,6 @@ class TestCapsule(base.BaseZunTest):
     @classmethod
     def setup_clients(cls):
         super(TestCapsule, cls).setup_clients()
-        cls.container_client = cls.os_primary.container_client
-        cls.docker_client = clients.DockerClient()
         cls.images_client = cls.os_primary.images_client
         cls.ports_client = cls.os_primary.ports_client
         cls.sgs_client = cls.os_primary.sgs_client

@@ -12,14 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from oslo_log import log as logging
 from tempest import config
 from tempest.lib.common import api_version_utils
 from tempest.lib.common.utils import data_utils
 from tempest import test
 
 from zun_tempest_plugin.tests.tempest.api import api_microversion_fixture
+from zun_tempest_plugin.tests.tempest.api import clients
+
 
 CONF = config.CONF
+LOG = logging.getLogger(__name__)
 
 
 class BaseZunTest(api_version_utils.BaseMicroversionTest,
@@ -45,6 +49,8 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
         super(BaseZunTest, cls).setup_clients()
         cls.networks_client = cls.os_primary.neutron_client
         cls.subnets_client = cls.os_primary.subnets_client
+        cls.docker_client = clients.DockerClient()
+        cls.container_client = cls.os_primary.container_client
 
     @classmethod
     def setup_credentials(cls):
@@ -65,6 +71,26 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
                 cls.min_microversion,
                 CONF.container_service.min_microversion))
         cls.wait_timeout = CONF.container_service.wait_timeout
+
+    @classmethod
+    def clear_credentials(cls):
+        cls.cleanup_network()
+        super(BaseZunTest, cls).clear_credentials()
+
+    @classmethod
+    def cleanup_network(cls):
+        creds_provider = cls._get_credentials_provider()
+        creds = creds_provider.get_primary_creds()
+        network = getattr(creds, 'network', None)
+        if not network:
+            return
+
+        docker_url = 'tcp://localhost:2375'
+        networks = cls.docker_client.list_networks(
+            network['id'], docker_auth_url=docker_url)
+        for network in networks:
+            cls.docker_client.remove_network(
+                network['Id'], docker_auth_url=docker_url)
 
     def setUp(self):
         super(BaseZunTest, self).setUp()
