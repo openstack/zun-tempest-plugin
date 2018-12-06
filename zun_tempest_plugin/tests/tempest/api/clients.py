@@ -178,6 +178,19 @@ class ZunClient(rest_client.RestClient):
 
         return url
 
+    @classmethod
+    def networks_uri(cls):
+        url = "/networks/"
+        return url
+
+    @classmethod
+    def network_uri(cls, network_id, params=None):
+        url = "{0}/{1}".format(cls.networks_uri(), network_id)
+        if params:
+            url = cls.add_params(url, params)
+
+        return url
+
     def post_container(self, model, **kwargs):
         """Makes POST /container request
 
@@ -343,6 +356,9 @@ class ZunClient(rest_client.RestClient):
 
     def delete_capsule(self, capsule_id, params=None):
         return self.delete(self.capsule_uri(capsule_id, params=params))
+
+    def delete_network(self, network_id, params=None):
+        return self.delete(self.network_uri(network_id, params=params))
 
 
 @contextlib.contextmanager

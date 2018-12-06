@@ -14,8 +14,10 @@
 
 from oslo_log import log as logging
 from tempest import config
+from tempest.lib.common import api_version_request
 from tempest.lib.common import api_version_utils
 from tempest.lib.common.utils import data_utils
+from tempest.lib import exceptions as lib_exc
 from tempest import test
 
 from zun_tempest_plugin.tests.tempest.api import api_microversion_fixture
@@ -74,7 +76,14 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
 
     @classmethod
     def clear_credentials(cls):
-        cls.cleanup_network()
+        try:
+            clients.set_container_service_api_microversion(
+                cls.request_microversion)
+            cls.cleanup_network()
+        except lib_exc.NotFound:
+            LOG.exception("Error on network cleanup.")
+        finally:
+            clients.reset_container_service_api_microversion()
         super(BaseZunTest, cls).clear_credentials()
 
     @classmethod
@@ -85,12 +94,17 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
         if not network:
             return
 
-        docker_url = 'tcp://localhost:2375'
-        networks = cls.docker_client.list_networks(
-            network['id'], docker_auth_url=docker_url)
-        for network in networks:
-            cls.docker_client.remove_network(
-                network['Id'], docker_auth_url=docker_url)
+        req_version = api_version_request.APIVersionRequest(
+            cls.request_microversion)
+        if req_version >= api_version_request.APIVersionRequest('1.27'):
+            cls.os_admin.container_client.delete_network(network['id'])
+        else:
+            docker_url = 'tcp://localhost:2375'
+            networks = cls.docker_client.list_networks(
+                network['id'], docker_auth_url=docker_url)
+            for network in networks:
+                cls.docker_client.remove_network(
+                    network['Id'], docker_auth_url=docker_url)
 
     def setUp(self):
         super(BaseZunTest, self).setUp()
