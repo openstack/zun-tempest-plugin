@@ -47,7 +47,6 @@ class TestContainer(base.BaseZunTest):
     def setup_clients(cls):
         super(TestContainer, cls).setup_clients()
         cls.images_client = cls.os_primary.images_client
-        cls.ports_client = cls.os_primary.ports_client
         cls.sgs_client = cls.os_primary.sgs_client
         cls.vol_client = cls.os_primary.vol_client
 
@@ -169,15 +168,17 @@ class TestContainer(base.BaseZunTest):
         networks = self.networks_client.list_networks()['networks']
         for network in networks:
             if network['project_id'] == project_id:
-                network_id = network['id']
+                tenant_network = network
+                break
+        else:
+            self.fail('Cannot find network in tenant.')
 
-        port = self.ports_client.create_port(
-            network_id=network_id, name='testport')['port']
-        self.addCleanup(self.ports_client.delete_port, port['id'])
+        port = self.create_port(tenant_network)
         port_address = port['fixed_ips'][0]['ip_address']
         port_subnet = port['fixed_ips'][0]['subnet_id']
 
-        _, model = self._run_container(nets=[{'port': 'testport'}])
+        _, model = self._run_container(nets=[{'port': port['id']}])
+        network_id = tenant_network['id']
         self.assertEqual(port['id'], model.addresses[network_id][0]['port'])
         self.assertEqual(port_address, model.addresses[network_id][0]['addr'])
         self.assertEqual(port_subnet,

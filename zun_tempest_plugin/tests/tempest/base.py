@@ -53,6 +53,7 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
         cls.subnets_client = cls.os_primary.subnets_client
         cls.docker_client = clients.DockerClient()
         cls.container_client = cls.os_primary.container_client
+        cls.ports_client = cls.os_primary.ports_client
 
     @classmethod
     def setup_credentials(cls):
@@ -131,3 +132,13 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
         subnet = client.create_subnet(**kwargs)['subnet']
         self.addCleanup(client.delete_subnet, subnet['id'])
         return subnet
+
+    def create_port(self, network, client=None, **values):
+        kwargs = {'name': data_utils.rand_name('test-port'),
+                  'network_id': network['id']}
+        if values:
+            kwargs.update(values)
+        client = client or self.ports_client
+        port = client.create_port(**kwargs)['port']
+        self.addCleanup(client.delete_port, port['id'])
+        return port

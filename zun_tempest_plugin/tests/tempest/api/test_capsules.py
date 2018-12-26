@@ -37,7 +37,6 @@ class TestCapsule(base.BaseZunTest):
     def setup_clients(cls):
         super(TestCapsule, cls).setup_clients()
         cls.images_client = cls.os_primary.images_client
-        cls.ports_client = cls.os_primary.ports_client
         cls.sgs_client = cls.os_primary.sgs_client
 
     @classmethod
