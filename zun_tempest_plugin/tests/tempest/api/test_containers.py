@@ -214,6 +214,17 @@ class TestContainer(base.BaseZunTest):
                    'version': 6}
         self._assert_container_has_address(model, address)
 
+        # create an ipv4 port from dual net
+        port = self.create_port(network,
+                                fixed_ips=[{'subnet_id': subnetv4['id']}])
+        _, model = self._run_container(nets=[{'port': port['id']}])
+        self.assertEqual(1, len(model.addresses[network['id']]))
+        address = {'port': port['id'],
+                   'addr': port['fixed_ips'][0]['ip_address'],
+                   'subnet_id': subnetv4['id'],
+                   'version': 4}
+        self._assert_container_has_address(model, address)
+
     def _assert_container_has_address(self, container, address,
                                       network_id=None):
         self.assertLessEqual(1, len(container.addresses))
