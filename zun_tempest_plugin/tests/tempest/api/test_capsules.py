@@ -34,23 +34,6 @@ class TestCapsule(base.BaseZunTest):
         )
         return clients.Manager(manager.credentials)
 
-    @classmethod
-    def setup_clients(cls):
-        super(TestCapsule, cls).setup_clients()
-        cls.images_client = cls.os_primary.images_client
-        cls.sgs_client = cls.os_primary.sgs_client
-
-    @classmethod
-    def resource_setup(cls):
-        super(TestCapsule, cls).resource_setup()
-
-    def setUp(self):
-        super(TestCapsule, self).setUp()
-        self.capsules = []
-
-    def tearDown(self):
-        super(TestCapsule, self).tearDown()
-
     @decorators.idempotent_id('d5c91423-0f83-44f8-8228-e6a28ef7817e')
     def test_create_capsule(self):
         self._create_capsule()
@@ -59,7 +42,6 @@ class TestCapsule(base.BaseZunTest):
         gen_model = datagen.capsule_data(**kwargs)
         resp, model = self.container_client.post_capsule(gen_model)
         self.addCleanup(self.container_client.delete_capsule, model.uuid)
-        self.capsules.append(model.uuid)
         self.assertEqual(202, resp.status)
         # Wait for container to finish creation
         self.container_client.ensure_capsule_in_desired_state(
