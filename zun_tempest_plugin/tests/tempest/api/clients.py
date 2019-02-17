@@ -353,12 +353,26 @@ class ZunClient(rest_client.RestClient):
                 return False
         utils.wait_for_condition(is_capsule_in_desired_state, timeout=120)
 
+    def list_capsules(self, **kwargs):
+        resp, body = self.get(self.capsules_uri(), **kwargs)
+        return self.deserialize(resp, body, capsule_model.CapsuleEntity)
+
     def get_capsule(self, capsule_id, params=None):
         resp, body = self.get(self.capsule_uri(capsule_id, params=params))
         return self.deserialize(resp, body, capsule_model.CapsuleEntity)
 
     def delete_capsule(self, capsule_id, params=None):
         return self.delete(self.capsule_uri(capsule_id, params=params))
+
+    def ensure_capsule_deleted(self, capsule_id):
+        def is_capsule_deleted():
+            _, model = self.list_capsules()
+            capsule_ids = [c['uuid'] for c in model.capsules]
+            if capsule_id in capsule_ids:
+                return False
+            else:
+                return True
+        utils.wait_for_condition(is_capsule_deleted)
 
     def delete_network(self, network_id, params=None):
         return self.delete(self.network_uri(network_id, params=params))

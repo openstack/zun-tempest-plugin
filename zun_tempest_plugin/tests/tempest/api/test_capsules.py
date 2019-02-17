@@ -22,7 +22,6 @@ class TestCapsule(base.BaseZunTest):
 
     credentials = ['primary', 'admin']
     min_microversion = '1.12'
-    max_microversion = '1.31'
 
     @classmethod
     def get_client_manager(cls, credential_type=None, roles=None,
@@ -41,7 +40,7 @@ class TestCapsule(base.BaseZunTest):
     def _create_capsule(self, **kwargs):
         gen_model = datagen.capsule_data(**kwargs)
         resp, model = self.container_client.post_capsule(gen_model)
-        self.addCleanup(self.container_client.delete_capsule, model.uuid)
+        self.addCleanup(self._delete_capsule, model.uuid)
         self.assertEqual(202, resp.status)
         # Wait for container to finish creation
         self.container_client.ensure_capsule_in_desired_state(
@@ -53,6 +52,10 @@ class TestCapsule(base.BaseZunTest):
         self.assertEqual('Running', model.status)
         # TODO(hongbin): verify all containers are running
         return resp, model
+
+    def _delete_capsule(self, uuid):
+        self.container_client.delete_capsule(uuid)
+        self.container_client.ensure_capsule_deleted(uuid)
 
     @decorators.idempotent_id('b7e79a0b-c09e-4539-886f-a9f33ae15620')
     def test_create_capsule_full(self):
