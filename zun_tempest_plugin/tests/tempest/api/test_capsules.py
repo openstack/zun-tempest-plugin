@@ -22,6 +22,7 @@ class TestCapsule(base.BaseZunTest):
 
     credentials = ['primary', 'admin']
     min_microversion = '1.12'
+    max_microversion = '1.31'
 
     @classmethod
     def get_client_manager(cls, credential_type=None, roles=None,
