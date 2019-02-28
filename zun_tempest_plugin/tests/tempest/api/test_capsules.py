@@ -12,10 +12,12 @@
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
+from tempest.lib import exceptions as lib_exc
 
 from zun_tempest_plugin.tests.tempest.api import clients
 from zun_tempest_plugin.tests.tempest.api.common import datagen
 from zun_tempest_plugin.tests.tempest import base
+from zun_tempest_plugin.tests.tempest import utils
 
 
 class TestCapsule(base.BaseZunTest):
@@ -54,8 +56,11 @@ class TestCapsule(base.BaseZunTest):
         return resp, model
 
     def _delete_capsule(self, uuid):
-        self.container_client.delete_capsule(uuid)
-        self.container_client.ensure_capsule_deleted(uuid)
+        try:
+            self.container_client.delete_capsule(uuid)
+            self.container_client.ensure_capsule_deleted(uuid)
+        except lib_exc.NotFound:
+            pass
 
     @decorators.idempotent_id('b7e79a0b-c09e-4539-886f-a9f33ae15620')
     def test_create_capsule_full(self):
@@ -105,3 +110,48 @@ class TestCapsule(base.BaseZunTest):
         }
 
         self._create_capsule(data=capsule_data)
+
+    @decorators.idempotent_id('8bb22511-b06f-4ea5-ae8d-9dd529205590')
+    @utils.requires_microversion('1.32')
+    def test_create_capsule_with_volume(self):
+        # create a volume in cinder
+        volume = self.vol_client.create_volume(
+            name=data_utils.rand_name(), size=1)['volume']
+        volume_id = volume['id']
+        self.addCleanup(self.vol_client.delete_volume, volume_id)
+
+        capsule_data = {
+            'template': {
+                'kind': 'capsule',
+                'capsuleVersion': 'beta',
+                'metadata': {'name': data_utils.rand_name('capsule')},
+                'spec': {
+                    'containers': [
+                        {
+                            'image': 'cirros:latest',
+                            'volumeMounts': [{
+                                'name': 'test-volume',
+                                'mountPath': '/test-volume',
+                            }]
+                        }
+                    ],
+                    'volumes': [
+                        {
+                            'name': 'test-volume',
+                            'cinder': {
+                                'volumeID': volume_id,
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+        _, model = self._create_capsule(data=capsule_data)
+        # assert volume is attached
+        volume = self.vol_client.show_volume(volume_id)['volume']
+        self.assertEqual('in-use', volume['status'])
+
+        self._delete_capsule(model.uuid)
+        # assert volume is detached
+        volume = self.vol_client.show_volume(volume_id)['volume']
+        self.assertEqual('available', volume['status'])
