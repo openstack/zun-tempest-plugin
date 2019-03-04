@@ -10,6 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from oslo_utils import encodeutils
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
@@ -154,3 +155,75 @@ class TestCapsule(base.BaseZunTest):
         # assert volume is detached
         volume = self.vol_client.show_volume(volume_id)['volume']
         self.assertEqual('available', volume['status'])
+
+    @decorators.idempotent_id('3534116a-fa85-4da5-b5a3-4ef20f9479b4')
+    @utils.requires_microversion('1.35')
+    def test_create_capsule_with_init_container(self):
+        capsule_data = {
+            'template': {
+                'kind': 'capsule',
+                'capsuleVersion': 'beta',
+                'metadata': {'name': data_utils.rand_name('capsule')},
+                'spec': {
+                    'initContainers': [
+                        {
+                            'image': 'cirros:latest',
+                            'command': [
+                                "/bin/sh",
+                                "-c",
+                                "echo 'hello' > /work-dir/index.html"
+                            ],
+                            'volumeMounts': [{
+                                'name': 'workdir',
+                                'mountPath': '/work-dir',
+                            }]
+                        }
+                    ],
+                    'containers': [
+                        {
+                            'image': 'nginx',
+                            'volumeMounts': [{
+                                'name': 'workdir',
+                                'mountPath': '/usr/share/nginx/html',
+                            }],
+                            'ports': [{
+                                'containerPort': 80,
+                                'protocol': 'TCP',
+                            }]
+                        }
+                    ],
+                    'volumes': [
+                        {
+                            'name': 'workdir',
+                            'cinder': {
+                                'size': 1,
+                                'autoRemove': True,
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+        _, model = self._create_capsule(data=capsule_data)
+
+        # run another container to access port 80 and verify the content
+        # is 'hello'
+        # TODO(hongbin): Use capsule instead of container in here once
+        # retrieving capsule's log is supported
+        ip_address = None
+        for net_id in model.addresses:
+            for address in model.addresses[net_id]:
+                ip_address = address['addr']
+                break
+        self.assertIsNotNone(ip_address)
+        gen_model = datagen.container_data({
+            'image': 'cirros', 'command': ['curl', ip_address]})
+        _, m = self.container_client.run_container(gen_model)
+        self.container_client.ensure_container_in_desired_state(
+            m.uuid, 'Stopped')
+        resp, body = self.container_client.logs_container(m.uuid)
+        self.assertTrue('hello' in encodeutils.safe_decode(body))
+        # TODO(hongbin): Remove this once we switch to capsule
+        self.container_client.delete_container(
+            m.uuid, params={'stop': True})
+        self.container_client.ensure_container_deleted(m.uuid)
