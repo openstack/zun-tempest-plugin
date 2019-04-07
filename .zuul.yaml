@@ -1,6 +1,7 @@
 - job:
     name: zun-tempest-py35-docker-sql-queens
     parent: zun-tempest-py35-docker-sql
+    nodeset: openstack-single-node-xenial
     override-checkout: stable/queens
     vars:
       branch_override: stable/queens
