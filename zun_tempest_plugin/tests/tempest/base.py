@@ -55,6 +55,7 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
         cls.container_client = cls.os_primary.container_client
         cls.ports_client = cls.os_primary.ports_client
         cls.subnetpools_client = cls.os_primary.subnetpools_client
+        cls.vol_client = cls.os_primary.vol_client
 
     @classmethod
     def setup_credentials(cls):

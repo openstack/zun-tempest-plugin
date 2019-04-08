@@ -48,7 +48,6 @@ class TestContainer(base.BaseZunTest):
         super(TestContainer, cls).setup_clients()
         cls.images_client = cls.os_primary.images_client
         cls.sgs_client = cls.os_primary.sgs_client
-        cls.vol_client = cls.os_primary.vol_client
 
     @classmethod
     def resource_setup(cls):
