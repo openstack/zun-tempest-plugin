@@ -87,7 +87,6 @@ class TestCapsule(base.BaseZunTest):
                                 "ENV2": "/usr/bin"
                             },
                             "image": "ubuntu",
-                            "imagePullPolicy": "ifnotpresent",
                             "ports": [
                                 {
                                     "containerPort": 80,
