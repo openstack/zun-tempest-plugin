@@ -608,6 +608,26 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual(202, resp.status)
         # TODO(hongbin): wait for reboot to complete and assure it succeeds
 
+    @decorators.idempotent_id('a0c8843f-c32e-4658-b228-eb16c746f495')
+    @utils.requires_microversion('1.33')
+    def test_rebuild_container(self):
+        _, model = self._run_container()
+
+        resp, _ = self.container_client.rebuild_container(model.uuid)
+        self.assertEqual(202, resp.status)
+        request_id = self._get_request_id(resp)
+        # Wait for container to rebuild
+        self.container_client.ensure_action_finished(
+            model.uuid, request_id)
+
+        resp, action = self.container_client.get_container_action(
+            model.uuid, request_id)
+        self.assertEqual(200, resp.status)
+        # if the action succeeds, action.message will be None
+        self.assertIsNone(action.message)
+        self.container_client.ensure_container_in_desired_state(
+            model.uuid, 'Running')
+
     @decorators.idempotent_id('8a591ff8-6793-427f-82a6-e3921d8b4f81')
     def test_exec_container(self):
         _, model = self._run_container()
