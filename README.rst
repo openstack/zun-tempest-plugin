@@ -23,6 +23,22 @@ https://docs.openstack.org/tempest/latest/#using-plugins
 Running the tests
 -----------------
 
+Edit ``/opt/stack/tempest/etc/tempest.conf``:
+
+   * Add the ``[container_service]`` section,
+     configure ``min_microversion`` and ``max_microversion``:
+
+     .. code-block:: ini
+
+        [container_service]
+        min_microversion=1.32
+        max_microversion=1.32
+
+   .. note::
+
+      You might need to modify the min/max microversion based on your
+      test environment.
+
 To run all tests from this plugin, install Zun into your environment and
 navigate to tempest directory::
 
@@ -30,8 +46,8 @@ navigate to tempest directory::
 
 Run this command::
 
-    $ tox -e all-plugin -- zun_tempest_plugin.tests.tempest.api
+    $ tempest run --regex zun_tempest_plugin.tests.tempest.api
 
 To run a single test case, run with the test case name, for example::
 
-    $ tox -e all-plugin -- zun_tempest_plugin.tests.tempest.api.test_containers.TestContainer.test_list_containers
+    $ tempest run --regex zun_tempest_plugin.tests.tempest.api.test_containers.TestContainer.test_list_containers
