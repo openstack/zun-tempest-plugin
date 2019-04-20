@@ -28,7 +28,7 @@
     check:
       jobs:
         - zun-tempest-docker-sql
-        - zun-tempest-py35-docker-sql
+        - zun-tempest-py3-docker-sql
         - zun-tempest-py35-docker-sql-queens
         - zun-tempest-py35-docker-sql-rocky
         - zun-tempest-py35-docker-sql-stein
@@ -38,7 +38,7 @@
       queue: zun
       jobs:
         - zun-tempest-docker-sql
-        - zun-tempest-py35-docker-sql
+        - zun-tempest-py3-docker-sql
         - zun-tempest-py35-docker-sql-queens
         - zun-tempest-py35-docker-sql-rocky
         - zun-tempest-py35-docker-sql-stein
