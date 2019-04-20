@@ -13,6 +13,13 @@
     vars:
       branch_override: stable/rocky
 
+- job:
+    name: zun-tempest-py35-docker-sql-stein
+    parent: zun-tempest-py35-docker-sql
+    override-checkout: stable/stein
+    vars:
+      branch_override: stable/stein
+
 - project:
     templates:
       - check-requirements
@@ -24,6 +31,7 @@
         - zun-tempest-py35-docker-sql
         - zun-tempest-py35-docker-sql-queens
         - zun-tempest-py35-docker-sql-rocky
+        - zun-tempest-py35-docker-sql-stein
         - zun-tempest-docker-etcd
         - zun-tempest-multinode-docker-sql
     gate:
@@ -33,3 +41,4 @@
         - zun-tempest-py35-docker-sql
         - zun-tempest-py35-docker-sql-queens
         - zun-tempest-py35-docker-sql-rocky
+        - zun-tempest-py35-docker-sql-stein
