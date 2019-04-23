@@ -17,7 +17,7 @@ https://docs.openstack.org/tempest/latest/#using-plugins
 
 * Free software: Apache license
 * Documentation: https://docs.openstack.org/zun-tempest-plugin/latest
-* Source: https://git.openstack.org/cgit/openstack/zun-tempest-plugin
+* Source: https://opendev.org/openstack/zun-tempest-plugin
 * Bugs: https://bugs.launchpad.net/zun
 
 Running the tests

@@ -1,6 +1,6 @@
-========
+=====
 Usage
-========
+=====
 
 To use zun_tempest_plugin in a project::
 
