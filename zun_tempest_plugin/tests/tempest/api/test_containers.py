@@ -172,9 +172,18 @@ class TestContainer(base.BaseZunTest):
         else:
             self.fail('Cannot find network in tenant.')
 
-        port = self.create_port(tenant_network)
+        port_name = data_utils.rand_name('port')
+        port = self.create_port(tenant_network, name=port_name)
         port_address = port['fixed_ips'][0]['ip_address']
         port_subnet = port['fixed_ips'][0]['subnet_id']
+        # NOTE(hongbin): port name will change in Rocky or earlier version
+        # self.assertEqual(port_name, port['name'])
+        self.assertEqual('', port['device_owner'])
+        self.assertEqual('', port['device_id'])
+        self.assertEqual([], port['tags'])
+        port = self.os_admin.ports_client.show_port(port['id'])['port']
+        self.assertEqual('', port['binding:host_id'])
+        self.assertEqual('unbound', port['binding:vif_type'])
 
         _, model = self._run_container(nets=[{'port': port['id']}])
         address = {'port': port['id'],
@@ -182,6 +191,27 @@ class TestContainer(base.BaseZunTest):
                    'subnet_id': port_subnet}
         self._assert_container_has_address(model, address,
                                            network_id=tenant_network['id'])
+        port = self.os_admin.ports_client.show_port(port['id'])['port']
+        # NOTE(hongbin): port name will change in Rocky or earlier version
+        # self.assertEqual(port_name, port['name'])
+        self.assertTrue(port['device_owner'])
+        self.assertEqual(model.uuid, port['device_id'])
+        self.assertTrue(port['tags'])
+        self.assertTrue(port['binding:host_id'])
+        self.assertNotEqual('unbound', port['binding:vif_type'])
+
+        resp, _ = self.container_client.delete_container(
+            model.uuid, params={'stop': True})
+        self.assertEqual(204, resp.status)
+        self.container_client.ensure_container_deleted(model.uuid)
+        port = self.os_admin.ports_client.show_port(port['id'])['port']
+        # NOTE(hongbin): port name will change in Rocky or earlier version
+        # self.assertEqual(port_name, port['name'])
+        self.assertEqual('', port['device_owner'])
+        self.assertEqual('', port['device_id'])
+        self.assertEqual([], port['tags'])
+        self.assertEqual('', port['binding:host_id'])
+        self.assertEqual('unbound', port['binding:vif_type'])
 
     @decorators.idempotent_id('cfa24356-30fd-42b7-92c7-bbf01bcaf6eb')
     def test_run_container_with_port_in_dual_net(self):
