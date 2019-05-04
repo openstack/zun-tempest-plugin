@@ -32,7 +32,6 @@
         - zun-tempest-py35-docker-sql-queens
         - zun-tempest-py35-docker-sql-rocky
         - zun-tempest-py35-docker-sql-stein
-        - zun-tempest-docker-etcd
         - zun-tempest-multinode-docker-sql
     gate:
       queue: zun
