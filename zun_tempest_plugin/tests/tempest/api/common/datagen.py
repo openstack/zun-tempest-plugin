@@ -62,7 +62,6 @@ def container_data(default_data=None, **kwargs):
             'restart_policy': {'Name': 'no'},
             'workdir': '/',
             'interactive': False,
-            'security_groups': ['default'],
         }
 
     default_data.update(kwargs)

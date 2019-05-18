@@ -329,7 +329,6 @@ class TestContainer(base.BaseZunTest):
     @utils.requires_microversion('1.20')
     def test_run_container_without_security_groups(self):
         gen_model = datagen.container_data()
-        delattr(gen_model, 'security_groups')
         _, model = self._run_container(gen_model=gen_model)
         sgs = self._get_all_security_groups(model)
         self.assertEqual(1, len(sgs))
@@ -443,6 +442,48 @@ class TestContainer(base.BaseZunTest):
             model.uuid, command='cat %s' % container_file)
         self.assertEqual(200, resp.status)
         self.assertTrue('hello' in encodeutils.safe_decode(body))
+
+    @decorators.idempotent_id('df7b2518-f779-43f6-b188-28cf3595e251')
+    @utils.requires_microversion('1.24')
+    def test_container_expose_port(self):
+        gen_model = datagen.container_data({'image': 'nginx',
+                                            'exposed_ports': {"80/tcp": {}}})
+        _, model = self._run_container(gen_model=gen_model)
+        # assert security group is created with port 80 open
+        secgroups = model.security_groups
+        self.assertEqual(1, len(secgroups))
+        secgroup = self.sgs_client.show_security_group(secgroups[0])
+        self.assertNotEqual('default', secgroup['security_group']['name'])
+        rules = secgroup['security_group']['security_group_rules']
+        for rule in rules:
+            if (rule['protocol'] == 'tcp' and rule['port_range_min'] == 80 and
+                    rule['port_range_max'] == 80):
+                break
+        else:
+            self.fail('Security group doesnot have rules for opening the port')
+
+        # access the container port
+        ip_address = None
+        for net_id in model.addresses:
+            for address in model.addresses[net_id]:
+                ip_address = address['addr']
+                break
+        self.assertIsNotNone(ip_address)
+        _, m = self._run_container(desired_state='Stopped',
+                                   command=['curl', ip_address])
+        resp, body = self.container_client.logs_container(m.uuid)
+        self.assertEqual(200, resp.status)
+        self.assertTrue(
+            'If you see this page, the nginx web server is successfully '
+            'installed' in encodeutils.safe_decode(body))
+
+        # delete the container and ensure security group is clean up
+        self.container_client.delete_container(
+            model.uuid, params={'stop': True})
+        self.container_client.ensure_container_deleted(model.uuid)
+        self.assertRaises(lib_exc.NotFound,
+                          self.sgs_client.show_security_group,
+                          secgroup['security_group']['id'])
 
     @decorators.idempotent_id('e49231b2-b095-40d3-9b54-33bb1b371cbe')
     @utils.requires_microversion('1.20')
@@ -724,7 +765,8 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual('Created', self._get_container_state(model))
         return resp, model
 
-    def _run_container(self, gen_model=None, **kwargs):
+    def _run_container(self, gen_model=None, desired_state='Running',
+                       **kwargs):
         if gen_model is None:
             gen_model = datagen.container_data(**kwargs)
         resp, model = self.container_client.run_container(gen_model)
@@ -732,12 +774,12 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual(202, resp.status)
         # Wait for container to started
         self.container_client.ensure_container_in_desired_state(
-            model.uuid, 'Running')
+            model.uuid, desired_state)
 
         # Assert the container is started
         resp, model = self.container_client.get_container(model.uuid)
-        self.assertEqual('Running', model.status)
-        self.assertEqual('Running', self._get_container_state(model))
+        self.assertEqual(desired_state, model.status)
+        self.assertEqual(desired_state, self._get_container_state(model))
         return resp, model
 
     def _get_container_state(self, model):
