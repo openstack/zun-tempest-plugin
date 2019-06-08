@@ -12,6 +12,7 @@
 
 from io import BytesIO
 import tarfile
+import testtools
 import time
 import types
 
@@ -96,17 +97,23 @@ class TestContainer(base.BaseZunTest):
     @decorators.idempotent_id('cef53a56-22b7-4808-b01c-06b2b7126115')
     def test_delete_container(self):
         _, container = self._create_container()
-        docker_url = self._get_docker_url(container)
         resp, _ = self.container_client.delete_container(container.uuid)
         self.assertEqual(204, resp.status)
         self.container_client.ensure_container_deleted(container.uuid)
-        container = self.docker_client.get_container(
-            container.uuid, docker_url)
-        self.assertIsNone(container)
 
     @decorators.idempotent_id('ef69c9e7-0ce0-4e14-b7ec-c1dc581a3927')
     def test_run_container(self):
-        self._run_container()
+        _, model = self._run_container(
+            environment={'key1': 'env1', 'key2': 'env2'},
+            labels={'key1': 'label1', 'key2': 'label2'},
+            restart_policy={'Name': 'on-failure', 'MaximumRetryCount': 2},
+        )
+        resp, model = self.container_client.get_container(model.uuid)
+        self.assertEqual(200, resp.status)
+        self.assertEqual({'key1': 'env1', 'key2': 'env2'}, model.environment)
+        self.assertEqual({'key1': 'label1', 'key2': 'label2'}, model.labels)
+        self.assertEqual({'Name': 'on-failure', 'MaximumRetryCount': '2'},
+                         model.restart_policy)
 
     @decorators.idempotent_id('a2152d78-b6a6-4f47-8767-d83d29c6fb19')
     def test_run_container_with_minimal_params(self):
@@ -137,29 +144,6 @@ class TestContainer(base.BaseZunTest):
 
         _, model = self._run_container(
             image='cirros', image_driver='glance')
-
-    @decorators.idempotent_id('b70bedbc-5ba2-400c-8f5f-0cf05ca17151')
-    def test_run_container_with_environment(self):
-        _, model = self._run_container(environment={
-            'key1': 'env1', 'key2': 'env2'})
-
-        container = self.docker_client.get_container(
-            model.uuid,
-            self._get_docker_url(model))
-        env = container.get('Config').get('Env')
-        self.assertTrue('key1=env1' in env)
-        self.assertTrue('key2=env2' in env)
-
-    @decorators.idempotent_id('0e59d549-58ff-440f-8704-10e223c31cbc')
-    def test_run_container_with_labels(self):
-        _, model = self._run_container(labels={
-            'key1': 'label1', 'key2': 'label2'})
-
-        container = self.docker_client.get_container(
-            model.uuid,
-            self._get_docker_url(model))
-        labels = container.get('Config').get('Labels')
-        self.assertEqual({'key1': 'label1', 'key2': 'label2'}, labels)
 
     @decorators.idempotent_id('8fc7fec1-e1a2-3f65-a5a6-dba425c1607c')
     def test_run_container_with_port(self):
@@ -300,30 +284,6 @@ class TestContainer(base.BaseZunTest):
             subnet_kwargs.update(subnet_values)
         subnet = self.create_subnet(network, **subnet_kwargs)
         return pool_id, subnet
-
-    @decorators.idempotent_id('9fc7fec0-e1a9-4f65-a5a6-dba425c1607c')
-    def test_run_container_with_restart_policy(self):
-        _, model = self._run_container(restart_policy={
-            'Name': 'on-failure', 'MaximumRetryCount': 2})
-
-        container = self.docker_client.get_container(
-            model.uuid,
-            self._get_docker_url(model))
-        policy = container.get('HostConfig').get('RestartPolicy')
-        self.assertEqual('on-failure', policy['Name'])
-        self.assertEqual(2, policy['MaximumRetryCount'])
-
-    @decorators.idempotent_id('58585a4f-cdce-4dbd-9741-4416d1098f94')
-    def test_run_container_with_interactive(self):
-        _, model = self._run_container(interactive=True)
-
-        container = self.docker_client.get_container(
-            model.uuid,
-            self._get_docker_url(model))
-        tty = container.get('Config').get('Tty')
-        stdin_open = container.get('Config').get('OpenStdin')
-        self.assertIs(True, tty)
-        self.assertIs(True, stdin_open)
 
     @decorators.idempotent_id('f181eeda-a9d1-4b2e-9746-d6634ca81e2f')
     @utils.requires_microversion('1.20')
@@ -610,15 +570,11 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual(202, resp.status)
         self.container_client.ensure_container_in_desired_state(
             model.uuid, 'Stopped')
-        self.assertEqual('Stopped',
-                         self._get_container_state(model))
 
         resp, _ = self.container_client.start_container(model.uuid)
         self.assertEqual(202, resp.status)
         self.container_client.ensure_container_in_desired_state(
             model.uuid, 'Running')
-        self.assertEqual('Running',
-                         self._get_container_state(model))
 
     @decorators.idempotent_id('b5f39756-8898-4e0e-a48b-dda0a06b66b6')
     def test_pause_unpause_container(self):
@@ -628,15 +584,11 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual(202, resp.status)
         self.container_client.ensure_container_in_desired_state(
             model.uuid, 'Paused')
-        self.assertEqual('Paused',
-                         self._get_container_state(model))
 
         resp, _ = self.container_client.unpause_container(model.uuid)
         self.assertEqual(202, resp.status)
         self.container_client.ensure_container_in_desired_state(
             model.uuid, 'Running')
-        self.assertEqual('Running',
-                         self._get_container_state(model))
 
     @decorators.idempotent_id('6179a588-3d48-4372-9599-f228411d1449')
     def test_kill_container(self):
@@ -646,27 +598,15 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual(202, resp.status)
         self.container_client.ensure_container_in_desired_state(
             model.uuid, 'Stopped')
-        self.assertEqual('Stopped',
-                         self._get_container_state(model))
 
     @decorators.idempotent_id('c2e54321-0a70-4331-ba62-9dcaa75ac250')
+    @testtools.skip('temporarily disabled')
     def test_reboot_container(self):
         _, model = self._run_container()
-        docker_base_url = self._get_docker_url(model)
-        container = self.docker_client.get_container(model.uuid,
-                                                     docker_base_url)
-        pid = container.get('State').get('Pid')
 
         resp, _ = self.container_client.reboot_container(model.uuid)
         self.assertEqual(202, resp.status)
-        self.docker_client.ensure_container_pid_changed(model.uuid, pid,
-                                                        docker_base_url)
-        self.assertEqual('Running',
-                         self._get_container_state(model))
-        # assert pid is changed
-        container = self.docker_client.get_container(model.uuid,
-                                                     docker_base_url)
-        self.assertNotEqual(pid, container.get('State').get('Pid'))
+        # TODO(hongbin): wait for reboot to complete and assure it succeeds
 
     @decorators.idempotent_id('8a591ff8-6793-427f-82a6-e3921d8b4f81')
     def test_exec_container(self):
@@ -690,10 +630,6 @@ class TestContainer(base.BaseZunTest):
         _, model = self._run_container(cpu=0.1, memory=100)
         self.assertEqual('100', model.memory)
         self.assertEqual(0.1, model.cpu)
-        # docker_base_url = self._get_docker_url(model)
-        # container = self.docker_client.get_container(model.uuid,
-        #                                              docker_base_url)
-        # self._assert_resource_constraints(container, cpu=0.1, memory=100)
 
         gen_model = datagen.container_patch_data(cpu=0.2, memory=200)
         resp, model = self.container_client.update_container(model.uuid,
@@ -701,9 +637,6 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual(200, resp.status)
         self.assertEqual('200', model.memory)
         self.assertEqual(0.2, model.cpu)
-        # container = self.docker_client.get_container(model.uuid,
-        #                                              docker_base_url)
-        # self._assert_resource_constraints(container, cpu=0.2, memory=200)
 
     @decorators.idempotent_id('b218bea7-f19b-499f-9819-c7021ffc59f4')
     @utils.requires_microversion('1.14')
@@ -762,7 +695,6 @@ class TestContainer(base.BaseZunTest):
         resp, model = self.container_client.get_container(model.uuid)
         self.assertEqual(200, resp.status)
         self.assertEqual('Created', model.status)
-        self.assertEqual('Created', self._get_container_state(model))
         return resp, model
 
     def _run_container(self, gen_model=None, desired_state='Running',
@@ -779,23 +711,7 @@ class TestContainer(base.BaseZunTest):
         # Assert the container is started
         resp, model = self.container_client.get_container(model.uuid)
         self.assertEqual(desired_state, model.status)
-        self.assertEqual(desired_state, self._get_container_state(model))
         return resp, model
-
-    def _get_container_state(self, model):
-        container = self.docker_client.get_container(
-            model.uuid, self._get_docker_url(model))
-        status = container.get('State')
-        if status.get('Error') is True:
-            return 'Error'
-        elif status.get('Paused'):
-            return 'Paused'
-        elif status.get('Running'):
-            return 'Running'
-        elif status.get('Status') == 'created':
-            return 'Created'
-        else:
-            return 'Stopped'
 
     def _get_all_security_groups(self, container):
         # find all neutron ports of this container
@@ -819,14 +735,9 @@ class TestContainer(base.BaseZunTest):
 
         return sg_names
 
-    def _get_docker_url(self, container=None, host='localhost'):
+    def _get_docker_url(self, host='localhost'):
         protocol = 'tcp'
         port = '2375'
-        if container:
-            if not hasattr(container, 'host'):
-                _, container = self.os_admin.container_client.get_container(
-                    container.uuid, params={'all_projects': True})
-            host = container.host
         # NOTE(kiennt): By default, devstack-plugin-container will
         #               set docker_api_url = {
         #                       "unix://$DOCKER_ENGINE_SOCKET_FILE",
@@ -968,7 +879,6 @@ class TestContainerLegacy(TestContainer):
         # Assert the container is started
         resp, model = self.container_client.get_container(model.uuid)
         self.assertEqual('Running', model.status)
-        self.assertEqual('Running', self._get_container_state(model))
         return resp, model
 
     def _create_container(self, **kwargs):
@@ -987,5 +897,4 @@ class TestContainerLegacy(TestContainer):
         resp, model = self.container_client.get_container(model.uuid)
         self.assertEqual(200, resp.status)
         self.assertEqual('Created', model.status)
-        self.assertEqual('Created', self._get_container_state(model))
         return resp, model

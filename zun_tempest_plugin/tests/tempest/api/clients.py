@@ -398,45 +398,8 @@ class DockerHTTPClient(docker.APIClient):
             tls=False
         )
 
-    def list_instances(self, inspect=False):
-        """List all containers."""
-        res = []
-        for container in self.containers(all=True):
-            info = self.inspect_container(container['Id'])
-            if not info:
-                continue
-            if inspect:
-                res.append(info)
-            else:
-                res.append(info['Config'].get('Hostname'))
-        return res
-
-    def list_containers(self):
-        return self.containers(all=True, filters={'name': 'zun-'})
-
 
 class DockerClient(object):
-
-    def get_container(self, container_id,
-                      docker_auth_url=CONF.docker.api_url):
-        with docker_client(docker_auth_url) as docker:
-            for info in docker.list_instances(inspect=True):
-                if container_id in info['Name']:
-                    return info
-            return None
-
-    def ensure_container_pid_changed(
-            self, container_id, pid,
-            docker_auth_url=CONF.docker.api_url):
-        def is_pid_changed():
-            container = self.get_container(container_id,
-                                           docker_auth_url=docker_auth_url)
-            new_pid = container.get('State').get('Pid')
-            if pid != new_pid:
-                return True
-            else:
-                return False
-        utils.wait_for_condition(is_pid_changed)
 
     def pull_image(
             self, repo, tag=None,
@@ -461,8 +424,3 @@ class DockerClient(object):
                        docker_auth_url=CONF.docker.api_url):
         with docker_client(docker_auth_url) as docker:
             return docker.remove_network(name)
-
-    def get_archive(self, container_id, path,
-                    docker_auth_url=CONF.docker.api_url):
-        with docker_client(docker_auth_url) as docker:
-            return docker.get_archive(container_id, path)
