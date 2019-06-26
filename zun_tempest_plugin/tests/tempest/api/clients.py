@@ -71,20 +71,27 @@ class Manager(manager.Manager):
         super(Manager, self).__init__(credentials=credentials)
 
         self.images_client = images_client.ImagesClient(
-            self.auth_provider, 'image', CONF.identity.region)
+            self.auth_provider, 'image', CONF.identity.region,
+            disable_ssl_certificate_validation=True)
         self.ports_client = ports_client.PortsClient(
-            self.auth_provider, 'network', CONF.identity.region)
+            self.auth_provider, 'network', CONF.identity.region,
+            disable_ssl_certificate_validation=True)
         self.sgs_client = security_groups_client.SecurityGroupsClient(
-            self.auth_provider, 'network', CONF.identity.region)
+            self.auth_provider, 'network', CONF.identity.region,
+            disable_ssl_certificate_validation=True)
         self.vol_client = volumes_client.VolumesClient(
-            self.auth_provider, 'volumev3', CONF.identity.region)
+            self.auth_provider, 'volumev3', CONF.identity.region,
+            disable_ssl_certificate_validation=True)
         self.container_client = ZunClient(self.auth_provider)
         self.neutron_client = networks_client.NetworksClient(
-            self.auth_provider, 'network', CONF.identity.region)
+            self.auth_provider, 'network', CONF.identity.region,
+            disable_ssl_certificate_validation=True)
         self.subnets_client = subnets_client.SubnetsClient(
-            self.auth_provider, 'network', CONF.identity.region)
+            self.auth_provider, 'network', CONF.identity.region,
+            disable_ssl_certificate_validation=True)
         self.subnetpools_client = subnetpools_client.SubnetpoolsClient(
-            self.auth_provider, 'network', CONF.identity.region)
+            self.auth_provider, 'network', CONF.identity.region,
+            disable_ssl_certificate_validation=True)
 
 
 class ZunClient(rest_client.RestClient):
