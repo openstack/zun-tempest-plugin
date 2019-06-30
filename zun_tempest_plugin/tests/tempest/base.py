@@ -102,6 +102,8 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
         if req_version >= api_version_request.APIVersionRequest('1.27'):
             cls.os_admin.container_client.delete_network(network['id'])
         else:
+            # TODO(hongbin): remove such legacy cleanup logic after all
+            # branches support 'delete_network' above.
             docker_url = 'tcp://localhost:2375'
             networks = cls.docker_client.list_networks(
                 network['id'], docker_auth_url=docker_url)
