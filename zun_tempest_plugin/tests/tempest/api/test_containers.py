@@ -19,6 +19,7 @@ import types
 from oslo_serialization import jsonutils as json
 from oslo_utils import encodeutils
 import six
+from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
@@ -27,6 +28,9 @@ from zun_tempest_plugin.tests.tempest.api import clients
 from zun_tempest_plugin.tests.tempest.api.common import datagen
 from zun_tempest_plugin.tests.tempest import base
 from zun_tempest_plugin.tests.tempest import utils
+
+
+CONF = config.CONF
 
 
 class TestContainer(base.BaseZunTest):
@@ -122,6 +126,9 @@ class TestContainer(base.BaseZunTest):
 
     @decorators.idempotent_id('c32f93e3-da88-4c13-be38-25d2e662a28e')
     def test_run_container_with_image_driver_glance(self):
+        if not CONF.service_available.glance:
+            raise self.skipException("This test requires glance service")
+
         docker_base_url = self._get_docker_url()
         self.docker_client.pull_image(
             'cirros', docker_auth_url=docker_base_url)
@@ -522,6 +529,9 @@ class TestContainer(base.BaseZunTest):
         4. Create another container from the snapshot image
         5. Verify the pre-created file is there
         """
+        if not CONF.service_available.glance:
+            raise self.skipException("This test requires glance service")
+
         # This command creates a file inside the container
         command = ["/bin/sh", "-c", "echo hello > testfile;sleep 1000000"]
         _, model = self._run_container(command=command)
