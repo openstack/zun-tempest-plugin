@@ -153,6 +153,11 @@ class ZunClient(rest_client.RestClient):
 
         return url
 
+    def container_action_uri(cls, container_id, request_id):
+        url = "/containers/{0}/container_actions/{1}".format(
+            container_id, request_id)
+        return url
+
     @classmethod
     def add_params(cls, url, params):
         """add_params adds dict values (params) to url as query parameters
@@ -258,6 +263,10 @@ class ZunClient(rest_client.RestClient):
         return self.post(
             self.container_uri(container_id, action='reboot'), None, **kwargs)
 
+    def rebuild_container(self, container_id, **kwargs):
+        return self.post(
+            self.container_uri(container_id, action='rebuild'), None, **kwargs)
+
     def exec_container(self, container_id, command, **kwargs):
         return self.post(
             self.container_uri(container_id, action='execute'),
@@ -301,6 +310,12 @@ class ZunClient(rest_client.RestClient):
         return self.deserialize(resp, body,
                                 service_model.ServiceCollection)
 
+    def get_container_action(self, container_id, request_id):
+        resp, body = self.get(
+            self.container_action_uri(container_id, request_id))
+        return self.deserialize(
+            resp, body, container_model.ContainerActionEntity)
+
     def ensure_container_in_desired_state(self, container_id, status):
         def is_container_in_desired_state():
             _, container = self.get_container(container_id)
@@ -319,6 +334,15 @@ class ZunClient(rest_client.RestClient):
             else:
                 return True
         utils.wait_for_condition(is_container_deleted)
+
+    def ensure_action_finished(self, container_id, request_id):
+        def is_action_finished():
+            _, action = self.get_container_action(container_id, request_id)
+            if action.finish_time is not None:
+                return True
+            else:
+                return False
+        utils.wait_for_condition(is_action_finished, timeout=120)
 
     def network_attach(self, container_id, params=None, **kwargs):
         return self.post(

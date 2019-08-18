@@ -155,3 +155,6 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
         subnetpool = client.create_subnetpool(**kwargs)['subnetpool']
         self.addCleanup(client.delete_subnetpool, subnetpool['id'])
         return subnetpool
+
+    def _get_request_id(self, resp):
+        return resp.get('x-openstack-request-id', '')

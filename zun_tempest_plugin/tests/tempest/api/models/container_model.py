@@ -39,3 +39,14 @@ class ContainerPatchEntity(base_model.EntityModel):
     """Entity Model that represents a single instance of ContainerPatchData"""
     ENTITY_NAME = 'containerpatch'
     MODEL_TYPE = ContainerPatchData
+
+
+class ContainerActionData(base_model.BaseModel):
+    """Data that encapsulates container action attributes"""
+    pass
+
+
+class ContainerActionEntity(base_model.EntityModel):
+    """Entity Model that represents a single instance of ContainerActionData"""
+    ENTITY_NAME = 'containeraction'
+    MODEL_TYPE = ContainerActionData
