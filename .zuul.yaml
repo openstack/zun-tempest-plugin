@@ -26,7 +26,6 @@
       - tempest-plugin-jobs
     check:
       jobs:
-        - zun-tempest-docker-sql
         - zun-tempest-py3-docker-sql
         - zun-tempest-py35-docker-sql-rocky
         - zun-tempest-py35-docker-sql-stein
@@ -35,7 +34,6 @@
     gate:
       queue: zun
       jobs:
-        - zun-tempest-docker-sql
         - zun-tempest-py3-docker-sql
         - zun-tempest-py35-docker-sql-rocky
         - zun-tempest-py35-docker-sql-stein
