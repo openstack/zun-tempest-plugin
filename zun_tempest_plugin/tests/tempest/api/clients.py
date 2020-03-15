@@ -28,6 +28,7 @@ from tempest import manager
 
 from zun_tempest_plugin.tests.tempest.api.models import capsule_model
 from zun_tempest_plugin.tests.tempest.api.models import container_model
+from zun_tempest_plugin.tests.tempest.api.models import host_model
 from zun_tempest_plugin.tests.tempest.api.models import service_model
 from zun_tempest_plugin.tests.tempest import utils
 
@@ -204,6 +205,11 @@ class ZunClient(rest_client.RestClient):
         if params:
             url = cls.add_params(url, params)
 
+        return url
+
+    @classmethod
+    def hosts_uri(cls):
+        url = "/hosts/"
         return url
 
     def post_container(self, model, **kwargs):
@@ -407,6 +413,11 @@ class ZunClient(rest_client.RestClient):
 
     def delete_network(self, network_id, params=None):
         return self.delete(self.network_uri(network_id, params=params))
+
+    def list_hosts(self, **kwargs):
+        resp, body = self.get(self.hosts_uri(), **kwargs)
+        return self.deserialize(resp, body,
+                                host_model.HostCollection)
 
 
 @contextlib.contextmanager

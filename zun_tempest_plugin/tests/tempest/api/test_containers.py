@@ -11,6 +11,7 @@
 # under the License.
 
 from io import BytesIO
+import random
 import tarfile
 import testtools
 import time
@@ -518,6 +519,20 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual(200, resp.status)
         self.assertTrue(file_content in encodeutils.safe_decode(body))
 
+    @decorators.idempotent_id('0c8afb23-312d-4647-897d-b3c8591b26eb')
+    @utils.requires_microversion('1.39')
+    def test_run_container_with_requested_host(self):
+        _, model = self.os_admin.container_client.list_hosts()
+        hosts = model.hosts
+        self.assertTrue(len(hosts) > 0)
+
+        # create a container with the requested host
+        requested_host = random.choice(hosts).hostname
+        _, model = self._run_container(
+            container_client=self.os_admin.container_client,
+            host=requested_host)
+        self.assertEqual(requested_host, model.host)
+
     @decorators.idempotent_id('c3f02fa0-fdfb-49fc-95e2-6e4dc982f9be')
     def test_commit_container(self):
         """Test container snapshot
@@ -728,18 +743,20 @@ class TestContainer(base.BaseZunTest):
         return resp, model
 
     def _run_container(self, gen_model=None, desired_state='Running',
-                       **kwargs):
+                       container_client=None, **kwargs):
         if gen_model is None:
             gen_model = datagen.container_data(**kwargs)
-        resp, model = self.container_client.run_container(gen_model)
+        if container_client is None:
+            container_client = self.container_client
+        resp, model = container_client.run_container(gen_model)
         self.containers.append(model.uuid)
         self.assertEqual(202, resp.status)
         # Wait for container to started
-        self.container_client.ensure_container_in_desired_state(
+        container_client.ensure_container_in_desired_state(
             model.uuid, desired_state)
 
         # Assert the container is started
-        resp, model = self.container_client.get_container(model.uuid)
+        resp, model = container_client.get_container(model.uuid)
         self.assertEqual(desired_state, model.status)
         return resp, model
 
