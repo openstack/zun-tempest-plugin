@@ -12,7 +12,6 @@
 import contextlib
 
 import docker
-from six.moves.urllib import parse
 from tempest.common import credentials_factory as common_creds
 from tempest import config
 from tempest.lib.common import api_version_utils
@@ -25,6 +24,7 @@ from tempest.lib.services.network import subnetpools_client
 from tempest.lib.services.network import subnets_client
 from tempest.lib.services.volume.v3 import volumes_client
 from tempest import manager
+from urllib import parse
 
 from zun_tempest_plugin.tests.tempest.api.models import capsule_model
 from zun_tempest_plugin.tests.tempest.api.models import container_model

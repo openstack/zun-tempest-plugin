@@ -19,7 +19,6 @@ import types
 
 from oslo_serialization import jsonutils as json
 from oslo_utils import encodeutils
-import six
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
@@ -140,8 +139,8 @@ class TestContainer(base.BaseZunTest):
             #               returns generator [1]. These lines
             #               makes image_data readable.
             # [1] https://bugs.launchpad.net/zun/+bug/1753080
-            image_data = six.b('').join(image_data)
-            image_data = six.BytesIO(image_data)
+            image_data = ''.encode("latin-1").join(image_data)
+            image_data = BytesIO(image_data)
 
         image = self.images_client.create_image(
             name='cirros', disk_format='raw', container_format='docker')
@@ -255,7 +254,7 @@ class TestContainer(base.BaseZunTest):
             network_id = list(container.addresses.keys())[0]
         self.assertIn(network_id, container.addresses)
         for addr in container.addresses[network_id]:
-            if six.viewitems(address) <= six.viewitems(addr):
+            if address.items() <= addr.items():
                 break
         else:
             self.fail('Address %s is not found in container %s.' %

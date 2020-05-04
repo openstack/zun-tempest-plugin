@@ -14,7 +14,6 @@ import base64
 import functools
 import time
 
-import six
 from tempest import config
 from tempest.lib.common import api_version_utils
 
@@ -57,7 +56,7 @@ def requires_microversion(min_version, max_version='latest', **kwargs):
 
 
 def encode_file_data(data):
-    if six.PY3 and isinstance(data, str):
+    if isinstance(data, str):
         data = data.encode('utf-8')
     return base64.b64encode(data).decode('utf-8')
 
