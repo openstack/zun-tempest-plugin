@@ -118,8 +118,8 @@ class ZunClient(rest_client.RestClient):
     def request(self, *args, **kwargs):
         resp, resp_body = super(ZunClient, self).request(*args, **kwargs)
         if (CONTAINER_SERVICE_MICROVERSION and
-            CONTAINER_SERVICE_MICROVERSION
-                != api_version_utils.LATEST_MICROVERSION):
+            CONTAINER_SERVICE_MICROVERSION !=
+                api_version_utils.LATEST_MICROVERSION):
             api_version_utils.assert_version_header_matches_request(
                 self.api_microversion_header_name,
                 get_container_service_api_version(),
