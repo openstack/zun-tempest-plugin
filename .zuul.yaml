@@ -19,6 +19,11 @@
     vars:
       branch_override: stable/train
 
+- job:
+    name: zun-tempest-py3-docker-sql-ussuri
+    parent: zun-tempest-py3-docker-sql
+    override-checkout: stable/ussuri
+
 - project:
     templates:
       - check-requirements
@@ -30,6 +35,7 @@
         - zun-tempest-py35-docker-sql-rocky
         - zun-tempest-py35-docker-sql-stein
         - zun-tempest-py3-docker-sql-train
+        - zun-tempest-py3-docker-sql-ussuri
         - zun-tempest-multinode-docker-sql
     gate:
       queue: zun
@@ -38,3 +44,4 @@
         - zun-tempest-py35-docker-sql-rocky
         - zun-tempest-py35-docker-sql-stein
         - zun-tempest-py3-docker-sql-train
+        - zun-tempest-py3-docker-sql-ussuri
