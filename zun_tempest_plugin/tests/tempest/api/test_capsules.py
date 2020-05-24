@@ -53,6 +53,11 @@ class TestCapsule(base.BaseZunTest):
         resp, model = self.container_client.get_capsule(model.uuid)
         self.assertEqual(200, resp.status)
         self.assertEqual('Running', model.status)
+        if self._microversion_atleast('1.34'):
+            for container in model.init_containers:
+                self.assertEqual('Stopped', container['status'])
+        for container in model.containers:
+            self.assertEqual('Running', container['status'])
         # TODO(hongbin): verify all containers are running
         return resp, model
 
