@@ -361,6 +361,19 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual(subnet_id, test_subnet['id'])
         self.assertIn('10.1.0', addr)
 
+    @decorators.idempotent_id('956e9944-3647-4f87-bdbf-017569549227')
+    def test_run_container_with_no_gateway_subnet(self):
+        test_net = self.create_network()
+        test_subnet = self.create_subnet(
+            test_net, cidr='10.1.0.0/24', gateway_ip=None)
+        self.assertIsNone(test_subnet['gateway_ip'])
+        _, model = self._run_container(nets=[{'network': test_net['id']}])
+        self.assertEqual(1, len(model.addresses))
+        subnet_id = list(model.addresses.values())[0][0]['subnet_id']
+        addr = list(model.addresses.values())[0][0]['addr']
+        self.assertEqual(subnet_id, test_subnet['id'])
+        self.assertIn('10.1.0', addr)
+
     @decorators.idempotent_id('7a947d75-ab23-439a-bd94-f6e219f716a9')
     def test_run_container_with_cinder_volumes(self):
         """Tests the following:
