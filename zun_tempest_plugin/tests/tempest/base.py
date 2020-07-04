@@ -158,3 +158,8 @@ class BaseZunTest(api_version_utils.BaseMicroversionTest,
 
     def _get_request_id(self, resp):
         return resp.get('x-openstack-request-id', '')
+
+    def _microversion_atleast(self, version):
+        req_version = api_version_request.APIVersionRequest(
+            self.request_microversion)
+        return req_version >= api_version_request.APIVersionRequest(version)
