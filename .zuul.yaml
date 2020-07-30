@@ -1,6 +1,7 @@
 - job:
     name: zun-tempest-py35-docker-sql-rocky
     parent: zun-tempest-py35-docker-sql
+    nodeset: openstack-single-node-xenial
     override-checkout: stable/rocky
     vars:
       branch_override: stable/rocky
@@ -8,6 +9,7 @@
 - job:
     name: zun-tempest-py35-docker-sql-stein
     parent: zun-tempest-py35-docker-sql
+    nodeset: openstack-single-node-bionic
     override-checkout: stable/stein
     vars:
       branch_override: stable/stein
@@ -15,6 +17,7 @@
 - job:
     name: zun-tempest-py3-docker-sql-train
     parent: zun-tempest-py3-docker-sql
+    nodeset: openstack-single-node-bionic
     override-checkout: stable/train
     vars:
       branch_override: stable/train
@@ -22,6 +25,7 @@
 - job:
     name: zun-tempest-py3-docker-sql-ussuri
     parent: zun-tempest-py3-docker-sql
+    nodeset: openstack-single-node-bionic
     override-checkout: stable/ussuri
 
 - project:
