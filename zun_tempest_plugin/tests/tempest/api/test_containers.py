@@ -171,7 +171,6 @@ class TestContainer(base.BaseZunTest):
         # self.assertEqual(port_name, port['name'])
         self.assertEqual('', port['device_owner'])
         self.assertEqual('', port['device_id'])
-        self.assertEqual([], port['tags'])
         port = self.os_admin.ports_client.show_port(port['id'])['port']
         self.assertEqual('', port['binding:host_id'])
         self.assertEqual('unbound', port['binding:vif_type'])
@@ -187,7 +186,6 @@ class TestContainer(base.BaseZunTest):
         # self.assertEqual(port_name, port['name'])
         self.assertTrue(port['device_owner'])
         self.assertEqual(model.uuid, port['device_id'])
-        self.assertTrue(port['tags'])
         self.assertTrue(port['binding:host_id'])
         self.assertNotEqual('unbound', port['binding:vif_type'])
 
@@ -200,9 +198,6 @@ class TestContainer(base.BaseZunTest):
         # self.assertEqual(port_name, port['name'])
         self.assertEqual('', port['device_owner'])
         self.assertEqual('', port['device_id'])
-        # TODO(hongbin): The tags are not always cleanup due to bug #1776035
-        # Need to investigate the issue.
-        # self.assertEqual([], port['tags'])
         self.assertEqual('', port['binding:host_id'])
         self.assertEqual('unbound', port['binding:vif_type'])
 
