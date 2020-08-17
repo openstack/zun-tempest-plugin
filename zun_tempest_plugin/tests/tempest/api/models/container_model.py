@@ -50,3 +50,14 @@ class ContainerActionEntity(base_model.EntityModel):
     """Entity Model that represents a single instance of ContainerActionData"""
     ENTITY_NAME = 'containeraction'
     MODEL_TYPE = ContainerActionData
+
+
+class ContainerExecData(base_model.BaseModel):
+    """Data that encapsulates container exec attributes"""
+    pass
+
+
+class ContainerExecEntity(base_model.EntityModel):
+    """Entity Model that represents a single instance of ContainerExecData"""
+    ENTITY_NAME = 'containerexec'
+    MODEL_TYPE = ContainerExecData

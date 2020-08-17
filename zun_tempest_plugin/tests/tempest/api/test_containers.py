@@ -12,15 +12,19 @@
 
 from io import BytesIO
 import random
+import subprocess
 import tarfile
 import testtools
 import time
 import types
 
+from oslo_log import log as logging
 from oslo_serialization import jsonutils as json
 from oslo_utils import encodeutils
+from tempest.common.utils import net_utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
+from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
 
@@ -31,6 +35,7 @@ from zun_tempest_plugin.tests.tempest import utils
 
 
 CONF = config.CONF
+LOG = logging.getLogger(__name__)
 
 
 class TestContainer(base.BaseZunTest):
@@ -53,6 +58,7 @@ class TestContainer(base.BaseZunTest):
         super(TestContainer, cls).setup_clients()
         cls.images_client = cls.os_primary.images_client
         cls.sgs_client = cls.os_primary.sgs_client
+        cls.sg_rules_client = cls.os_primary.sg_rules_client
 
     @classmethod
     def resource_setup(cls):
@@ -421,7 +427,7 @@ class TestContainer(base.BaseZunTest):
         resp, body = self.container_client.exec_container(
             model.uuid, command='cat %s' % container_file)
         self.assertEqual(200, resp.status)
-        self.assertTrue('hello' in encodeutils.safe_decode(body))
+        self.assertTrue('hello' in body.output)
 
     @decorators.idempotent_id('df7b2518-f779-43f6-b188-28cf3595e251')
     @utils.requires_microversion('1.24')
@@ -506,7 +512,7 @@ class TestContainer(base.BaseZunTest):
         resp, body = self.container_client.exec_container(
             model.uuid, command='cat %s' % container_file)
         self.assertEqual(200, resp.status)
-        self.assertTrue('hello' in encodeutils.safe_decode(body))
+        self.assertTrue('hello' in body.output)
         # delete the container and assert the volume is removed.
         self.container_client.delete_container(
             model.uuid, params={'stop': True})
@@ -529,7 +535,7 @@ class TestContainer(base.BaseZunTest):
         resp, body = self.container_client.exec_container(
             model.uuid, command='cat %s' % container_file)
         self.assertEqual(200, resp.status)
-        self.assertTrue(file_content in encodeutils.safe_decode(body))
+        self.assertTrue(file_content in body.output)
 
     @decorators.idempotent_id('0c8afb23-312d-4647-897d-b3c8591b26eb')
     @utils.requires_microversion('1.39')
@@ -671,7 +677,7 @@ class TestContainer(base.BaseZunTest):
         resp, body = self.container_client.exec_container(model.uuid,
                                                           command='echo hello')
         self.assertEqual(200, resp.status)
-        self.assertTrue('hello' in encodeutils.safe_decode(body))
+        self.assertTrue('hello' in body.output)
 
     @decorators.idempotent_id('a912ca23-14e7-442f-ab15-e05aaa315204')
     def test_logs_container(self):
@@ -894,6 +900,291 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual(file_content, untar_content.decode())
         self.assertEqual(body['stat']['name'], tarinfo.name)
         self.assertEqual(body['stat']['size'], tarinfo.size)
+
+    @decorators.idempotent_id('91d8bf98-9dbf-4c38-91c3-6dc8cc47132f')
+    def test_container_network(self):
+        """Basic network operation test
+
+        For a freshly-booted container with an IP address ("port") on a given
+        network:
+        - the Tempest host can ping the IP address.  This implies, but
+            does not guarantee, that the
+            container has been assigned the correct IP address and has
+            connectivity to the Tempest host.
+        - the Tempest host can enter the container and
+            successfully execute the following:
+            - ping an external IP address, implying external connectivity.
+            - ping an internal IP address, implying connectivity to another
+               container on the same network.
+        - detach the floating-ip from the container and verify that it becomes
+            unreachable
+        - associate detached floating ip to a new container and verify
+            connectivity.
+        Verifies that floating IP status is updated correctly after each change
+        """
+        if not CONF.network.public_network_id:
+            msg = 'public network not defined.'
+            raise self.skipException(msg)
+
+        container, floating_ip, network = self._setup_network_and_containers()
+        self._check_public_network_connectivity(floating_ip,
+                                                should_connect=True)
+        self._check_network_internal_connectivity(container, network)
+        self._check_network_external_connectivity(container)
+        self._disassociate_floating_ips(floating_ip)
+        self._check_public_network_connectivity(
+            floating_ip, should_connect=False,
+            msg="after disassociate floating ip")
+        self._reassociate_floating_ips(floating_ip, network)
+        self._check_public_network_connectivity(
+            floating_ip, should_connect=True,
+            msg="after re-associate floating ip")
+
+    def _setup_network_and_containers(self, **kwargs):
+        network = self.create_network()
+        router = self.create_router()
+        subnet = self.create_subnet(network, allocate_cidr=True)
+        self.routers_client.add_router_interface(router['id'],
+                                                 subnet_id=subnet['id'])
+        self.addCleanup(self.routers_client.remove_router_interface,
+                        router['id'], subnet_id=subnet['id'])
+
+        tenant_network_id = network['id']
+        security_group = self._create_security_group()
+        _, model = self._run_container(
+            nets=[{'network': tenant_network_id}],
+            security_groups=[security_group['name']])
+        self.assertEqual(1, len(model.addresses))
+        self.assertEqual(1, len(model.addresses[tenant_network_id]))
+        port_id = model.addresses[tenant_network_id][0]['port']
+        fixed_ip_address = model.addresses[tenant_network_id][0]['addr']
+
+        floating_ip = self.fip_client.create_floatingip(
+            floating_network_id=CONF.network.public_network_id,
+            port_id=port_id,
+            fixed_ip_address=fixed_ip_address)['floatingip']
+        return model, floating_ip, network
+
+    def _create_security_group(self):
+        # Create security group
+        sg_name = data_utils.rand_name(self.__class__.__name__)
+        sg_desc = sg_name + " description"
+        secgroup = self.sgs_client.create_security_group(
+            name=sg_name, description=sg_desc)['security_group']
+        self.assertEqual(secgroup['name'], sg_name)
+        self.assertEqual(secgroup['description'], sg_desc)
+        self.addCleanup(
+            self.sgs_client.delete_security_group,
+            secgroup['id'])
+
+        # Add rules to the security group
+        self._create_pingable_secgroup_rule(secgroup)
+
+        return secgroup
+
+    def _create_pingable_secgroup_rule(self, secgroup, sg_rules_client=None):
+        if sg_rules_client is None:
+            sg_rules_client = self.sg_rules_client
+        rulesets = [
+            dict(
+                # ping
+                protocol='icmp',
+            ),
+            dict(
+                # ipv6-icmp for ping6
+                protocol='icmp',
+                ethertype='IPv6',
+            )
+        ]
+        for ruleset in rulesets:
+            for r_direction in ['ingress', 'egress']:
+                ruleset['direction'] = r_direction
+                try:
+                    sg_rules_client.create_security_group_rule(
+                        security_group_id=secgroup['id'],
+                        project_id=secgroup['project_id'],
+                        **ruleset)
+                except lib_exc.Conflict as ex:
+                    # if rule already exist - skip rule and continue
+                    msg = 'Security group rule already exists'
+                    if msg not in ex._error_string:
+                        raise ex
+
+    def _disassociate_floating_ips(self, floating_ip):
+        floating_ip = self.fip_client.update_floatingip(
+            floating_ip['id'], port_id=None)['floatingip']
+        self.assertIsNone(floating_ip['port_id'])
+
+    def _reassociate_floating_ips(self, floating_ip, network):
+        # create a new container for the floating ip
+        tenant_network_id = network['id']
+        security_group = self._create_security_group()
+        _, container = self._run_container(
+            nets=[{'network': tenant_network_id}],
+            security_groups=[security_group['name']])
+        self.assertEqual(1, len(container.addresses))
+        self.assertEqual(1, len(container.addresses[tenant_network_id]))
+        port_id = container.addresses[tenant_network_id][0]['port']
+        floating_ip = self.fip_client.update_floatingip(
+            floating_ip['id'], port_id=port_id)['floatingip']
+        self.assertEqual(port_id, floating_ip['port_id'])
+
+    def _check_public_network_connectivity(
+            self, floating_ip, should_connect=True, msg=None,
+            should_check_floating_ip_status=True, mtu=None):
+        ip_address = floating_ip['floating_ip_address']
+        floatingip_status = 'DOWN'
+        if should_connect:
+            floatingip_status = 'ACTIVE'
+
+        # Check FloatingIP Status before initiating a connection
+        if should_check_floating_ip_status:
+            self._check_floating_ip_status(floating_ip, floatingip_status)
+
+        message = 'Public network connectivity check failed'
+        if msg:
+            message += '. Reason: %s' % msg
+
+        self._check_ip_connectivity(ip_address, should_connect, message,
+                                    mtu=mtu)
+
+    def _check_ip_connectivity(self, ip_address, should_connect=True,
+                               extra_msg="", mtu=None):
+        LOG.debug('checking network connections to IP: %s', ip_address)
+        if should_connect:
+            msg = "Timed out waiting for %s to become reachable" % ip_address
+        else:
+            msg = "ip address %s is reachable" % ip_address
+        if extra_msg:
+            msg = "%s\n%s" % (extra_msg, msg)
+        self.assertTrue(self._ping_ip_address(ip_address,
+                                              should_succeed=should_connect,
+                                              mtu=mtu),
+                        msg=msg)
+
+    def _check_network_internal_connectivity(self, container, network,
+                                             should_connect=True):
+        """check container internal connectivity:
+
+        - ping internal gateway and DHCP port, implying in-tenant connectivity
+        pinging both, because L3 and DHCP agents might be on different nodes
+        """
+        # get internal ports' ips:
+        # get all network and compute ports in the new network
+        internal_ips = (
+            p['fixed_ips'][0]['ip_address'] for p in
+            self.os_admin.ports_client.list_ports(
+                project_id=container.project_id,
+                network_id=network['id'])['ports']
+            if p['device_owner'].startswith('network')
+        )
+
+        for internal_ip in internal_ips:
+            self._check_remote_connectivity(container, internal_ip,
+                                            should_connect)
+
+    def _check_network_external_connectivity(self, container):
+        # We ping the external IP from the container using its floating IP
+        # which is always IPv4, so we must only test connectivity to
+        # external IPv4 IPs if the external network is dualstack.
+        v4_subnets = [
+            s for s in self.os_admin.subnets_client.list_subnets(
+                network_id=CONF.network.public_network_id)['subnets']
+            if s['ip_version'] == 4
+        ]
+
+        if len(v4_subnets) > 1:
+            self.assertTrue(
+                CONF.network.subnet_id,
+                "Found %d subnets. Specify subnet using configuration "
+                "option [network].subnet_id."
+                % len(v4_subnets))
+            subnet = self.os_admin.subnets_client.show_subnet(
+                CONF.network.subnet_id)['subnet']
+            external_ip = subnet['gateway_ip']
+        else:
+            external_ip = v4_subnets[0]['gateway_ip']
+
+        self._check_remote_connectivity(container, external_ip)
+
+    def _check_remote_connectivity(self, container, dest, should_succeed=True):
+        def connect_remote():
+            resp, body = self.container_client.exec_container(
+                container.uuid,
+                command="ping -c1 -w1 %s" % dest)
+            self.assertEqual(200, resp.status)
+            return (body.exit_code == 0) == should_succeed
+
+        result = test_utils.call_until_true(connect_remote,
+                                            CONF.validation.ping_timeout, 1)
+        if result:
+            return
+
+        if should_succeed:
+            msg = "Timed out waiting for %s to become reachable" % (
+                dest)
+        else:
+            msg = "%s is reachable from container" % (dest)
+        self.fail(msg)
+
+    def _ping_ip_address(self, ip_address, should_succeed=True,
+                         ping_timeout=None, mtu=None, server=None):
+        timeout = ping_timeout or CONF.validation.ping_timeout
+        cmd = ['ping', '-c1', '-w1']
+
+        if mtu:
+            cmd += [
+                # don't fragment
+                '-M', 'do',
+                # ping receives just the size of ICMP payload
+                '-s', str(net_utils.get_ping_payload_size(mtu, 4))
+            ]
+        cmd.append(ip_address)
+
+        def ping():
+            proc = subprocess.Popen(cmd,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            proc.communicate()
+
+            return (proc.returncode == 0) == should_succeed
+
+        caller = test_utils.find_test_caller()
+        LOG.debug('%(caller)s begins to ping %(ip)s in %(timeout)s sec and the'
+                  ' expected result is %(should_succeed)s', {
+                      'caller': caller, 'ip': ip_address, 'timeout': timeout,
+                      'should_succeed':
+                      'reachable' if should_succeed else 'unreachable'
+                  })
+        result = test_utils.call_until_true(ping, timeout, 1)
+        LOG.debug('%(caller)s finishes ping %(ip)s in %(timeout)s sec and the '
+                  'ping result is %(result)s', {
+                      'caller': caller, 'ip': ip_address, 'timeout': timeout,
+                      'result': 'expected' if result else 'unexpected'
+                  })
+        return result
+
+    def _check_floating_ip_status(self, floating_ip, status):
+        floatingip_id = floating_ip['id']
+
+        def refresh():
+            floating_ip = (self.fip_client.
+                           show_floatingip(floatingip_id)['floatingip'])
+            if status == floating_ip['status']:
+                LOG.info("FloatingIP: {fp} is at status: {st}"
+                         .format(fp=floating_ip, st=status))
+            return status == floating_ip['status']
+
+        if not test_utils.call_until_true(refresh,
+                                          CONF.network.build_timeout,
+                                          CONF.network.build_interval):
+            floating_ip = self.fip_client.show_floatingip(
+                floatingip_id)['floatingip']
+            self.assertEqual(status, floating_ip['status'],
+                             message="FloatingIP: {fp} is at status: {cst}. "
+                                     "failed  to reach status: {st}"
+                             .format(fp=floating_ip, cst=floating_ip['status'],
+                                     st=status))
 
     def _ensure_network_detached(self, container, network):
         def is_network_detached():

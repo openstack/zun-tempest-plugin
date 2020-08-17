@@ -17,8 +17,11 @@ from tempest import config
 from tempest.lib.common import api_version_utils
 from tempest.lib.common import rest_client
 from tempest.lib.services.image.v2 import images_client
+from tempest.lib.services.network import floating_ips_client
 from tempest.lib.services.network import networks_client
 from tempest.lib.services.network import ports_client
+from tempest.lib.services.network import routers_client
+from tempest.lib.services.network import security_group_rules_client
 from tempest.lib.services.network import security_groups_client
 from tempest.lib.services.network import subnetpools_client
 from tempest.lib.services.network import subnets_client
@@ -80,6 +83,10 @@ class Manager(manager.Manager):
         self.sgs_client = security_groups_client.SecurityGroupsClient(
             self.auth_provider, 'network', CONF.identity.region,
             disable_ssl_certificate_validation=True)
+        self.sg_rules_client = \
+            security_group_rules_client.SecurityGroupRulesClient(
+                self.auth_provider, 'network', CONF.identity.region,
+                disable_ssl_certificate_validation=True)
         self.vol_client = volumes_client.VolumesClient(
             self.auth_provider, 'volumev3', CONF.identity.region,
             disable_ssl_certificate_validation=True)
@@ -91,6 +98,12 @@ class Manager(manager.Manager):
             self.auth_provider, 'network', CONF.identity.region,
             disable_ssl_certificate_validation=True)
         self.subnetpools_client = subnetpools_client.SubnetpoolsClient(
+            self.auth_provider, 'network', CONF.identity.region,
+            disable_ssl_certificate_validation=True)
+        self.fip_client = floating_ips_client.FloatingIPsClient(
+            self.auth_provider, 'network', CONF.identity.region,
+            disable_ssl_certificate_validation=True)
+        self.routers_client = routers_client.RoutersClient(
             self.auth_provider, 'network', CONF.identity.region,
             disable_ssl_certificate_validation=True)
 
@@ -274,9 +287,11 @@ class ZunClient(rest_client.RestClient):
             self.container_uri(container_id, action='rebuild'), None, **kwargs)
 
     def exec_container(self, container_id, command, **kwargs):
-        return self.post(
+        resp, body = self.post(
             self.container_uri(container_id, action='execute'),
             '{"command": "%s"}' % command, **kwargs)
+        return self.deserialize(
+            resp, body, container_model.ContainerExecEntity)
 
     def logs_container(self, container_id, **kwargs):
         return self.get(
