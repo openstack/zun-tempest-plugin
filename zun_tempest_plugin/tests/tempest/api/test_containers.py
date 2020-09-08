@@ -452,6 +452,7 @@ class TestContainer(base.BaseZunTest):
         self.assertIsNotNone(ip_address)
         _, m = self._run_container(desired_state='Stopped',
                                    command=['curl', ip_address])
+        time.sleep(1)  # wait for logs to print out
         resp, body = self.container_client.logs_container(m.uuid)
         self.assertEqual(200, resp.status)
         self.assertTrue(
@@ -620,6 +621,7 @@ class TestContainer(base.BaseZunTest):
             _, model = self._run_container(
                 image="myrepo", image_driver="glance", command=command,
                 entrypoint=entrypoint)
+            time.sleep(1)  # wait for logs to print out
             resp, body = self.container_client.logs_container(model.uuid)
             self.assertEqual(200, resp.status)
             self.assertTrue('hello' in encodeutils.safe_decode(body))
@@ -724,6 +726,7 @@ class TestContainer(base.BaseZunTest):
     def test_logs_container(self):
         _, model = self._run_container(
             command=["/bin/sh", "-c", "echo hello;sleep 1000000"])
+        time.sleep(1)  # wait for logs to print out
         resp, body = self.container_client.logs_container(model.uuid)
         self.assertEqual(200, resp.status)
         self.assertTrue('hello' in encodeutils.safe_decode(body))
