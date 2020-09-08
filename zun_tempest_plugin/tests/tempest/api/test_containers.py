@@ -547,6 +547,7 @@ class TestContainer(base.BaseZunTest):
         self.assertEqual(requested_host, model.host)
 
     @decorators.idempotent_id('c3f02fa0-fdfb-49fc-95e2-6e4dc982f9be')
+    @utils.requires_microversion('1.1', '1.39')
     def test_commit_container(self):
         """Test container snapshot
 
@@ -574,6 +575,51 @@ class TestContainer(base.BaseZunTest):
             command = ["/bin/sh", "-c", "cat testfile;sleep 1000000"]
             _, model = self._run_container(
                 image="myrepo", image_driver="glance", command=command)
+            resp, body = self.container_client.logs_container(model.uuid)
+            self.assertEqual(200, resp.status)
+            self.assertTrue('hello' in encodeutils.safe_decode(body))
+        finally:
+            try:
+                response = self.images_client.list_images()
+                for image in response['images']:
+                    if (image['name'] == 'myrepo' and
+                            image['container_format'] == 'docker'):
+                        self.images_client.delete_image(image['id'])
+            except Exception:
+                pass
+
+    @decorators.idempotent_id('985c9060-b925-47d0-9ceb-10c547ce58a5')
+    @utils.requires_microversion('1.40')
+    def test_commit_container_140(self):
+        """Test container snapshot
+
+        This test does the following:
+        1. Create a container
+        2. Create and write to a file inside the container
+        3. Commit the container and upload the snapshot to Glance
+        4. Create another container from the snapshot image
+        5. Verify the pre-created file is there
+        """
+        if not CONF.service_available.glance:
+            raise self.skipException("This test requires glance service")
+
+        # This command creates a file inside the container
+        entrypoint = ["/bin/sh", "-c"]
+        command = ["echo hello > testfile;sleep 1000000"]
+        _, model = self._run_container(command=command, entrypoint=entrypoint)
+
+        try:
+            resp, _ = self.container_client.commit_container(
+                model.uuid, params={'repository': 'myrepo'})
+            self.assertEqual(202, resp.status)
+            self._ensure_image_active('myrepo')
+
+            # This command outputs the content of pre-created file
+            entrypoint = ["/bin/sh", "-c"]
+            command = ["cat testfile;sleep 1000000"]
+            _, model = self._run_container(
+                image="myrepo", image_driver="glance", command=command,
+                entrypoint=entrypoint)
             resp, body = self.container_client.logs_container(model.uuid)
             self.assertEqual(200, resp.status)
             self.assertTrue('hello' in encodeutils.safe_decode(body))
