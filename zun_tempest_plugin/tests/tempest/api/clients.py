@@ -344,7 +344,7 @@ class ZunClient(rest_client.RestClient):
                 return True
             else:
                 return False
-        utils.wait_for_condition(is_container_in_desired_state, timeout=120)
+        utils.wait_for_condition(is_container_in_desired_state, timeout=240)
 
     def ensure_container_deleted(self, container_id):
         def is_container_deleted():
@@ -354,7 +354,7 @@ class ZunClient(rest_client.RestClient):
                 return False
             else:
                 return True
-        utils.wait_for_condition(is_container_deleted)
+        utils.wait_for_condition(is_container_deleted, timeout=240)
 
     def ensure_action_finished(self, container_id, request_id):
         def is_action_finished():
@@ -403,7 +403,7 @@ class ZunClient(rest_client.RestClient):
                 return True
             else:
                 return False
-        utils.wait_for_condition(is_capsule_in_desired_state, timeout=120)
+        utils.wait_for_condition(is_capsule_in_desired_state, timeout=240)
 
     def list_capsules(self, **kwargs):
         resp, body = self.get(self.capsules_uri(), **kwargs)
@@ -424,7 +424,7 @@ class ZunClient(rest_client.RestClient):
                 return False
             else:
                 return True
-        utils.wait_for_condition(is_capsule_deleted)
+        utils.wait_for_condition(is_capsule_deleted, timeout=240)
 
     def delete_network(self, network_id, params=None):
         return self.delete(self.network_uri(network_id, params=params))

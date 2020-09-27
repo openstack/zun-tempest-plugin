@@ -376,6 +376,7 @@ class TestContainer(base.BaseZunTest):
         self.assertIn('10.1.0', addr)
 
     @decorators.idempotent_id('7a947d75-ab23-439a-bd94-f6e219f716a9')
+    @testtools.skip('bug 1897497')
     def test_run_container_with_cinder_volumes(self):
         """Tests the following:
 
