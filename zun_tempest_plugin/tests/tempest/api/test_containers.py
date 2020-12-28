@@ -135,11 +135,12 @@ class TestContainer(base.BaseZunTest):
         if not CONF.service_available.glance:
             raise self.skipException("This test requires glance service")
 
+        image_name = 'alpine'
         docker_base_url = self._get_docker_url()
         self.docker_client.pull_image(
-            'cirros', docker_auth_url=docker_base_url)
+            image_name, docker_auth_url=docker_base_url)
         image_data = self.docker_client.get_image(
-            'cirros', docker_base_url)
+            image_name, docker_base_url)
         if isinstance(image_data, types.GeneratorType):
             # NOTE(kiennt): In Docker-py 3.1.0, get_image
             #               returns generator [1]. These lines
@@ -149,14 +150,14 @@ class TestContainer(base.BaseZunTest):
             image_data = BytesIO(image_data)
 
         image = self.images_client.create_image(
-            name='cirros', disk_format='raw', container_format='docker')
+            name=image_name, disk_format='raw', container_format='docker')
         self.addCleanup(self.images_client.delete_image, image['id'])
         self.images_client.store_image_file(image['id'], image_data)
         # delete the local image that was previously pulled down
-        self.docker_client.delete_image('cirros', docker_base_url)
+        self.docker_client.delete_image(image_name, docker_base_url)
 
         _, model = self._run_container(
-            image='cirros', image_driver='glance')
+            image=image_name, image_driver='glance')
 
     @decorators.idempotent_id('8fc7fec1-e1a2-3f65-a5a6-dba425c1607c')
     def test_run_container_with_port(self):
