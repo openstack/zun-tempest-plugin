@@ -12,10 +12,12 @@
 import contextlib
 
 import docker
+from tempest import clients as tempest_clients
 from tempest.common import credentials_factory as common_creds
 from tempest import config
 from tempest.lib.common import api_version_utils
 from tempest.lib.common import rest_client
+from tempest.lib.services import clients
 from tempest.lib.services.image.v2 import images_client
 from tempest.lib.services.network import floating_ips_client
 from tempest.lib.services.network import networks_client
@@ -26,7 +28,6 @@ from tempest.lib.services.network import security_groups_client
 from tempest.lib.services.network import subnetpools_client
 from tempest.lib.services.network import subnets_client
 from tempest.lib.services.volume.v3 import volumes_client
-from tempest import manager
 from urllib import parse
 
 from zun_tempest_plugin.tests.tempest.api.models import capsule_model
@@ -59,7 +60,7 @@ def reset_container_service_api_microversion():
     CONTAINER_SERVICE_MICROVERSION = None
 
 
-class Manager(manager.Manager):
+class Manager(clients.ServiceClients):
 
     def __init__(self, credentials=None):
         """Initialization of Manager class.
@@ -72,7 +73,15 @@ class Manager(manager.Manager):
             if ADMIN_CREDS is None:
                 ADMIN_CREDS = common_creds.get_configured_admin_credentials()
             credentials = ADMIN_CREDS
-        super(Manager, self).__init__(credentials=credentials)
+        dscv = CONF.identity.disable_ssl_certificate_validation
+        _, uri = tempest_clients.get_auth_provider_class(credentials)
+        super(Manager, self).__init__(
+            credentials=credentials,
+            identity_uri=uri,
+            scope='project',
+            disable_ssl_certificate_validation=dscv,
+            ca_certs=CONF.identity.ca_certificates_file,
+            trace_requests=CONF.debug.trace_requests)
 
         self.images_client = images_client.ImagesClient(
             self.auth_provider, 'image', CONF.identity.region,
