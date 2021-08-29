@@ -10,6 +10,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import testtools
+
 from oslo_utils import encodeutils
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
@@ -37,6 +39,7 @@ class TestCapsule(base.BaseZunTest):
         return clients.Manager(manager.credentials)
 
     @decorators.idempotent_id('d5c91423-0f83-44f8-8228-e6a28ef7817e')
+    @testtools.skip('bug 1941982')
     def test_create_capsule(self):
         self._create_capsule()
 
@@ -69,6 +72,7 @@ class TestCapsule(base.BaseZunTest):
             pass
 
     @decorators.idempotent_id('b7e79a0b-c09e-4539-886f-a9f33ae15620')
+    @testtools.skip('bug 1941982')
     def test_create_capsule_full(self):
         capsule_data = {
             "template": {
@@ -117,6 +121,7 @@ class TestCapsule(base.BaseZunTest):
         self._create_capsule(data=capsule_data)
 
     @decorators.idempotent_id('8bb22511-b06f-4ea5-ae8d-9dd529205590')
+    @testtools.skip('bug 1941982')
     @utils.requires_microversion('1.32')
     def test_create_capsule_with_volume(self):
         # create a volume in cinder
@@ -162,6 +167,7 @@ class TestCapsule(base.BaseZunTest):
         self.assertEqual('available', volume['status'])
 
     @decorators.idempotent_id('3534116a-fa85-4da5-b5a3-4ef20f9479b4')
+    @testtools.skip('bug 1941982')
     @utils.requires_microversion('1.35')
     def test_create_capsule_with_init_container(self):
         capsule_data = {
