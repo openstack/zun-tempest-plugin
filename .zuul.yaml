@@ -1,10 +1,4 @@
 - job:
-    name: zun-tempest-py3-docker-sql-ussuri
-    parent: zun-tempest-py3-docker-sql
-    nodeset: openstack-single-node-bionic
-    override-checkout: stable/ussuri
-
-- job:
     name: zun-tempest-py3-docker-sql-victoria
     parent: zun-tempest-py3-docker-sql
     nodeset: openstack-single-node-focal
@@ -22,6 +16,12 @@
     nodeset: openstack-single-node-focal
     override-checkout: stable/xena
 
+- job:
+    name: zun-tempest-py3-docker-sql-yoga
+    parent: zun-tempest-py3-docker-sql
+    nodeset: openstack-single-node-focal
+    override-checkout: stable/yoga
+
 - project:
     templates:
       - check-requirements
@@ -30,16 +30,16 @@
     check:
       jobs:
         - zun-tempest-py3-docker-sql
-        - zun-tempest-py3-docker-sql-ussuri
         - zun-tempest-py3-docker-sql-victoria
         - zun-tempest-py3-docker-sql-wallaby
         - zun-tempest-py3-docker-sql-xena
+        - zun-tempest-py3-docker-sql-yoga
         - zun-tempest-multinode-docker-sql
     gate:
       queue: zun
       jobs:
         - zun-tempest-py3-docker-sql
-        - zun-tempest-py3-docker-sql-ussuri
         - zun-tempest-py3-docker-sql-victoria
         - zun-tempest-py3-docker-sql-wallaby
         - zun-tempest-py3-docker-sql-xena
+        - zun-tempest-py3-docker-sql-yoga
