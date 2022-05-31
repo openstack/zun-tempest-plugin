@@ -1,10 +1,4 @@
 - job:
-    name: zun-tempest-py3-docker-sql-victoria
-    parent: zun-tempest-py3-docker-sql
-    nodeset: openstack-single-node-focal
-    override-checkout: stable/victoria
-
-- job:
     name: zun-tempest-py3-docker-sql-wallaby
     parent: zun-tempest-py3-docker-sql
     nodeset: openstack-single-node-focal
@@ -30,7 +24,6 @@
     check:
       jobs:
         - zun-tempest-py3-docker-sql
-        - zun-tempest-py3-docker-sql-victoria
         - zun-tempest-py3-docker-sql-wallaby
         - zun-tempest-py3-docker-sql-xena
         - zun-tempest-py3-docker-sql-yoga
@@ -39,7 +32,6 @@
       queue: zun
       jobs:
         - zun-tempest-py3-docker-sql
-        - zun-tempest-py3-docker-sql-victoria
         - zun-tempest-py3-docker-sql-wallaby
         - zun-tempest-py3-docker-sql-xena
         - zun-tempest-py3-docker-sql-yoga
