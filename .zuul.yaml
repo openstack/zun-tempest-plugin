@@ -16,7 +16,14 @@
     nodeset: openstack-single-node-focal
     override-checkout: stable/yoga
 
+- job:
+    name: zun-tempest-py3-docker-sql-zed
+    parent: zun-tempest-py3-docker-sql
+    nodeset: openstack-single-node-focal
+    override-checkout: stable/zed
+
 - project:
+    queue: zun
     templates:
       - check-requirements
       - publish-openstack-docs-pti
@@ -27,11 +34,12 @@
         - zun-tempest-py3-docker-sql-wallaby
         - zun-tempest-py3-docker-sql-xena
         - zun-tempest-py3-docker-sql-yoga
+        - zun-tempest-py3-docker-sql-zed
         - zun-tempest-multinode-docker-sql
     gate:
-      queue: zun
       jobs:
         - zun-tempest-py3-docker-sql
         - zun-tempest-py3-docker-sql-wallaby
         - zun-tempest-py3-docker-sql-xena
         - zun-tempest-py3-docker-sql-yoga
+        - zun-tempest-py3-docker-sql-zed
