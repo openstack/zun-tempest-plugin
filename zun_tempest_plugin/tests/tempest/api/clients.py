@@ -97,7 +97,7 @@ class Manager(clients.ServiceClients):
                 self.auth_provider, 'network', CONF.identity.region,
                 disable_ssl_certificate_validation=True)
         self.vol_client = volumes_client.VolumesClient(
-            self.auth_provider, 'volumev3', CONF.identity.region,
+            self.auth_provider, 'block-storage', CONF.identity.region,
             disable_ssl_certificate_validation=True)
         self.container_client = ZunClient(self.auth_provider)
         self.neutron_client = networks_client.NetworksClient(

@@ -1,20 +1,20 @@
 - job:
-    name: zun-tempest-py3-docker-sql-yoga
-    parent: zun-tempest-py3-docker-sql
-    nodeset: openstack-single-node-focal
-    override-checkout: stable/yoga
-
-- job:
-    name: zun-tempest-py3-docker-sql-zed
-    parent: zun-tempest-py3-docker-sql
-    nodeset: openstack-single-node-focal
-    override-checkout: stable/zed
-
-- job:
-    name: zun-tempest-py3-docker-sql-2023-1
+    name: zun-tempest-py3-docker-sql-2023-2
     parent: zun-tempest-py3-docker-sql
     nodeset: openstack-single-node-jammy
-    override-checkout: stable/2023.1
+    override-checkout: stable/2023.2
+
+- job:
+    name: zun-tempest-py3-docker-sql-2024-1
+    parent: zun-tempest-py3-docker-sql
+    nodeset: openstack-single-node-jammy
+    override-checkout: stable/2024.1
+
+- job:
+    name: zun-tempest-py3-docker-sql-2024-2
+    parent: zun-tempest-py3-docker-sql
+    nodeset: openstack-single-node-jammy
+    override-checkout: stable/2024.2
 
 - project:
     queue: zun
@@ -25,13 +25,10 @@
     check:
       jobs:
         - zun-tempest-py3-docker-sql
-        - zun-tempest-py3-docker-sql-yoga
-        - zun-tempest-py3-docker-sql-zed
-        - zun-tempest-py3-docker-sql-2023-1
+        - zun-tempest-py3-docker-sql-2023-2
+        - zun-tempest-py3-docker-sql-2024-1
+        - zun-tempest-py3-docker-sql-2024-2
         - zun-tempest-multinode-docker-sql
     gate:
       jobs:
         - zun-tempest-py3-docker-sql
-        - zun-tempest-py3-docker-sql-yoga
-        - zun-tempest-py3-docker-sql-zed
-        - zun-tempest-py3-docker-sql-2023-1
