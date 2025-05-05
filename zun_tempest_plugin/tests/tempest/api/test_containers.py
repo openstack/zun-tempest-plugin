@@ -127,7 +127,9 @@ class TestContainer(base.BaseZunTest):
 
     @decorators.idempotent_id('a2152d78-b6a6-4f47-8767-d83d29c6fb19')
     def test_run_container_with_minimal_params(self):
-        gen_model = datagen.container_data({'image': 'nginx'})
+        gen_model = datagen.container_data({
+            'image': CONF.container_service.nginx_image
+        })
         self._run_container(gen_model=gen_model)
 
     @decorators.idempotent_id('c32f93e3-da88-4c13-be38-25d2e662a28e')
@@ -429,8 +431,12 @@ class TestContainer(base.BaseZunTest):
     @decorators.idempotent_id('df7b2518-f779-43f6-b188-28cf3595e251')
     @utils.requires_microversion('1.24')
     def test_container_expose_port(self):
-        gen_model = datagen.container_data({'image': 'nginx',
-                                            'exposed_ports': {"80/tcp": {}}})
+        gen_model = datagen.container_data(
+            {
+                'image': CONF.container_service.nginx_image,
+                'exposed_ports': {"80/tcp": {}},
+            }
+        )
         _, model = self._run_container(gen_model=gen_model)
         # assert security group is created with port 80 open
         secgroups = model.security_groups

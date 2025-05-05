@@ -13,6 +13,7 @@
 import testtools
 
 from oslo_utils import encodeutils
+from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
@@ -21,6 +22,9 @@ from zun_tempest_plugin.tests.tempest.api import clients
 from zun_tempest_plugin.tests.tempest.api.common import datagen
 from zun_tempest_plugin.tests.tempest import base
 from zun_tempest_plugin.tests.tempest import utils
+
+
+CONF = config.CONF
 
 
 class TestCapsule(base.BaseZunTest):
@@ -96,7 +100,7 @@ class TestCapsule(base.BaseZunTest):
                                 "ENV1": "/usr/local/bin",
                                 "ENV2": "/usr/bin"
                             },
-                            "image": "ubuntu",
+                            "image": CONF.container_service.ubuntu_image,
                             "ports": [
                                 {
                                     "containerPort": 80,
@@ -138,7 +142,7 @@ class TestCapsule(base.BaseZunTest):
                 'spec': {
                     'containers': [
                         {
-                            'image': 'cirros:latest',
+                            'image': CONF.container_service.cirros_image,
                             'volumeMounts': [{
                                 'name': 'test-volume',
                                 'mountPath': '/test-volume',
@@ -178,7 +182,7 @@ class TestCapsule(base.BaseZunTest):
                 'spec': {
                     'initContainers': [
                         {
-                            'image': 'cirros:latest',
+                            'image': CONF.container_service.cirros_image,
                             'command': [
                                 "/bin/sh",
                                 "-c",
@@ -192,7 +196,7 @@ class TestCapsule(base.BaseZunTest):
                     ],
                     'containers': [
                         {
-                            'image': 'nginx',
+                            'image': CONF.container_service.nginx_image,
                             'volumeMounts': [{
                                 'name': 'workdir',
                                 'mountPath': '/usr/share/nginx/html',
@@ -228,7 +232,8 @@ class TestCapsule(base.BaseZunTest):
                 break
         self.assertIsNotNone(ip_address)
         gen_model = datagen.container_data({
-            'image': 'cirros', 'command': ['curl', ip_address]})
+            'image': CONF.container_service.cirros_image,
+            'command': ['curl', ip_address]})
         _, m = self.container_client.run_container(gen_model)
         self.container_client.ensure_container_in_desired_state(
             m.uuid, 'Stopped')

@@ -15,9 +15,13 @@ import socket
 import string
 import struct
 
+from tempest import config
 from tempest.lib.common.utils import data_utils
 from zun_tempest_plugin.tests.tempest.api.models import capsule_model
 from zun_tempest_plugin.tests.tempest.api.models import container_model
+
+
+CONF = config.CONF
 
 
 def random_int(min_int=1, max_int=100):
@@ -52,7 +56,7 @@ def container_data(default_data=None, **kwargs):
     if default_data is None:
         default_data = {
             'name': data_utils.rand_name('container'),
-            'image': 'cirros:latest',
+            'image': CONF.container_service.cirros_image,
             'command': ['sleep', '10000'],
             'cpu': 0.1,
             'memory': '100',
@@ -74,7 +78,7 @@ def container_data_legacy(default_data=None, **kwargs):
     if default_data is None:
         default_data = {
             'name': data_utils.rand_name('container'),
-            'image': 'cirros:latest',
+            'image': CONF.container_service.cirros_image,
             'command': 'sleep 10000',
             'cpu': 0.1,
             'memory': '100',
@@ -146,7 +150,7 @@ def capsule_data(data=None, **kwargs):
                 'metadata': {'name': data_utils.rand_name('capsule')},
                 'spec': {
                     'containers': [
-                        {'image': 'cirros:latest'},
+                        {'image': CONF.container_service.cirros_image},
                     ]
                 }
             }

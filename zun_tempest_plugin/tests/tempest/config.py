@@ -27,6 +27,10 @@ ContainerServiceGroup = [
     cfg.StrOpt("catalog_type",
                default="container",
                help="Catalog type of the containers service."),
+    cfg.StrOpt('cirros_image',
+               default='cirros:latest',
+               help='Docker image which represents CirrOS as '
+                    'underlying system.'),
     cfg.IntOpt("wait_timeout",
                default=60,
                help="Waiting time for a specific status, in seconds."),
@@ -45,7 +49,14 @@ ContainerServiceGroup = [
                     "Tempest selects tests based on the range between "
                     "microversion and max_microversion. If both values "
                     "are None, Tempest avoids tests which require a "
-                    "microversion.")
+                    "microversion."),
+    cfg.StrOpt('nginx_image',
+               default='nginx',
+               help='Docker image which contains Nginx web server.'),
+    cfg.StrOpt('ubuntu_image',
+               default='ubuntu',
+               help='Docker image which represents Ubuntu as '
+                    'underlying system.')
 ]
 
 docker_group = cfg.OptGroup(name='docker',
