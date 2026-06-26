@@ -424,7 +424,7 @@ class TestContainer(base.BaseZunTest):
         resp, body = self.container_client.exec_container(
             model.uuid, command='cat %s' % container_file)
         self.assertEqual(200, resp.status)
-        self.assertTrue('hello' in body.output)
+        self.assertIn('hello', body.output)
 
     @decorators.idempotent_id('df7b2518-f779-43f6-b188-28cf3595e251')
     @utils.requires_microversion('1.24')
@@ -510,7 +510,7 @@ class TestContainer(base.BaseZunTest):
         resp, body = self.container_client.exec_container(
             model.uuid, command='cat %s' % container_file)
         self.assertEqual(200, resp.status)
-        self.assertTrue('hello' in body.output)
+        self.assertIn('hello', body.output)
         # delete the container and assert the volume is removed.
         self.container_client.delete_container(
             model.uuid, params={'stop': True})
@@ -533,7 +533,7 @@ class TestContainer(base.BaseZunTest):
         resp, body = self.container_client.exec_container(
             model.uuid, command='cat %s' % container_file)
         self.assertEqual(200, resp.status)
-        self.assertTrue(file_content in body.output)
+        self.assertIn(file_content, body.output)
 
     @decorators.idempotent_id('0c8afb23-312d-4647-897d-b3c8591b26eb')
     @utils.requires_microversion('1.39')
@@ -722,7 +722,7 @@ class TestContainer(base.BaseZunTest):
         resp, body = self.container_client.exec_container(model.uuid,
                                                           command='echo hello')
         self.assertEqual(200, resp.status)
-        self.assertTrue('hello' in body.output)
+        self.assertIn('hello', body.output)
 
     @decorators.idempotent_id('a912ca23-14e7-442f-ab15-e05aaa315204')
     def test_logs_container(self):
