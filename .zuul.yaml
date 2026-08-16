@@ -10,6 +10,12 @@
     nodeset: openstack-single-node-noble
     override-checkout: stable/2025.2
 
+- job:
+    name: zun-tempest-py3-docker-sql-2026-1
+    parent: zun-tempest-py3-docker-sql
+    nodeset: openstack-single-node-noble
+    override-checkout: stable/2026.1
+
 - project:
     queue: zun
     templates:
@@ -21,6 +27,7 @@
         - zun-tempest-py3-docker-sql
         - zun-tempest-py3-docker-sql-2025-1
         - zun-tempest-py3-docker-sql-2025-2
+        - zun-tempest-py3-docker-sql-2026-1
         - zun-tempest-multinode-docker-sql
     gate:
       jobs:
