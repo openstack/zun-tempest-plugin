@@ -18,7 +18,7 @@ from oslo_config import cfg
 service_option = cfg.BoolOpt("zun",
                              default=True,
                              help="Whether or not zun is expected to be "
-                                  "available")
+                                  "available.")
 
 container_service_group = cfg.OptGroup(
     name="container_service", title="Containers Service Options")
@@ -53,24 +53,24 @@ docker_group = cfg.OptGroup(name='docker',
 
 docker_opts = [
     cfg.StrOpt('docker_remote_api_version',
-               default='1.26',
-               help='Docker remote api version. Override it according to '
-                    'specific docker api version in your environment.'),
+               default='1.40',
+               help='Docker remote API version. Override it according to '
+                    'specific docker API version in your environment.'),
     cfg.IntOpt('default_timeout',
                default=60,
                help='Default timeout in seconds for docker client '
                     'operations.'),
     cfg.StrOpt('api_url',
                default='unix:///var/run/docker.sock',
-               help='API endpoint of docker daemon'),
+               help='API endpoint of docker daemon.'),
     cfg.StrOpt('docker_remote_api_url',
                default='tcp://$docker_remote_api_host:$docker_remote_api_port',
-               help='Remote API endpoint of docker daemon'),
+               help='Remote API endpoint of docker daemon.'),
     cfg.StrOpt('docker_remote_api_host',
                default=socket.gethostname(),
                sample_default='localhost',
-               help='Defines the remote api host for the docker daemon.'),
+               help='Defines the remote API host for the docker daemon.'),
     cfg.StrOpt('docker_remote_api_port',
                default='2375',
-               help='Defines the remote api port for the docker daemon.'),
+               help='Defines the remote API port for the docker daemon.'),
 ]
