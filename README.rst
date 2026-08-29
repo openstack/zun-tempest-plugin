@@ -1,13 +1,8 @@
-========================
-Team and repository tags
-========================
-
-.. image:: http://governance.openstack.org/tc/badges/zun-tempest-plugin.svg
-    :target: http://governance.openstack.org/tc/reference/tags/index.html
-
 ==========================
 Tempest Integration of Zun
 ==========================
+
+.. image:: https://governance.openstack.org/tc/badges/zun-tempest-plugin.svg
 
 This directory contains Tempest tests to cover the Zun project, as well
 as a plugin to automatically load these tests into tempest.
