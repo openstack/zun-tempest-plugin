@@ -612,32 +612,34 @@ class TestContainer(base.BaseZunTest):
         if not CONF.service_available.glance:
             raise self.skipException("This test requires glance service")
 
-        # This command creates a file inside the container
+        repository = data_utils.rand_name('test-commit')
         entrypoint = ["/bin/sh", "-c"]
-        command = ["echo hello > testfile;sleep 1000000"]
-        _, model = self._run_container(command=command, entrypoint=entrypoint)
+
+        # This command creates a file inside the container
+        _, model = self._run_container(
+            command=["echo hello > testfile;sleep 1000000"],
+            entrypoint=entrypoint)
 
         try:
             resp, _ = self.container_client.commit_container(
-                model.uuid, params={'repository': 'myrepo'})
+                model.uuid, params={'repository': repository})
             self.assertEqual(202, resp.status)
-            self._ensure_image_active('myrepo')
+            self._ensure_image_active(repository)
 
             # This command outputs the content of pre-created file
-            entrypoint = ["/bin/sh", "-c"]
-            command = ["cat testfile;sleep 1000000"]
             _, model = self._run_container(
-                image="myrepo", image_driver="glance", command=command,
+                image=repository, image_driver="glance",
+                command=["cat testfile;sleep 1000000"],
                 entrypoint=entrypoint)
             time.sleep(1)  # wait for logs to print out
             resp, body = self.container_client.logs_container(model.uuid)
             self.assertEqual(200, resp.status)
-            self.assertTrue('hello' in encodeutils.safe_decode(body))
+            self.assertIn('hello', encodeutils.safe_decode(body))
         finally:
             try:
                 response = self.images_client.list_images()
                 for image in response['images']:
-                    if (image['name'] == 'myrepo' and
+                    if (image['name'] == repository and
                             image['container_format'] == 'docker'):
                         self.images_client.delete_image(image['id'])
             except Exception:
