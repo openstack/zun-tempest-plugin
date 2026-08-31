@@ -449,7 +449,9 @@ class TestContainer(base.BaseZunTest):
                     rule['port_range_max'] == 80):
                 break
         else:
-            self.fail('Security group doesnot have rules for opening the port')
+            self.fail(
+                'Security group does not have a rule for opening the port'
+            )
 
         # access the container port
         ip_address = None
@@ -463,9 +465,8 @@ class TestContainer(base.BaseZunTest):
         time.sleep(1)  # wait for logs to print out
         resp, body = self.container_client.logs_container(m.uuid)
         self.assertEqual(200, resp.status)
-        self.assertTrue(
-            'If you see this page, the nginx web server is successfully '
-            'installed' in encodeutils.safe_decode(body))
+        self.assertIn(
+            'Welcome to nginx!', encodeutils.safe_decode(body))
 
         # delete the container and ensure security group is clean up
         self.container_client.delete_container(
