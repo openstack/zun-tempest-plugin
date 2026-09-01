@@ -322,9 +322,9 @@ class TestContainer(base.BaseZunTest):
 
         This test does the following:
         1. Create a network and its subnet
-        2. Verity the created network and its subnet.
+        2. Verify the created network and its subnet.
         3. Run a container with this network.
-        4. Verify container's addresses is in subnet's cidr.
+        4. Verify container's addresses are in the subnet's CIDR.
         """
         test_net = self.create_network(name='test_net')
         self.assertEqual(test_net['name'], 'test_net')
@@ -345,9 +345,9 @@ class TestContainer(base.BaseZunTest):
 
         This test does the following:
         1. Create a network and its subnet (In admin tenant)
-        2. Verity the created network and its subnet.
+        2. Verify the created network and its subnet.
         3. Run a container with this network.
-        4. Verify container's addresses is in subnet's cidr.
+        4. Verify container's addresses are in the subnet's CIDR.
         """
         test_net = self.create_network(
             client=self.os_admin.neutron_client,
@@ -468,7 +468,7 @@ class TestContainer(base.BaseZunTest):
         self.assertIn(
             'Welcome to nginx!', encodeutils.safe_decode(body))
 
-        # delete the container and ensure security group is clean up
+        # delete the container and ensure security group is cleaned up
         self.container_client.delete_container(
             model.uuid, params={'stop': True})
         self.container_client.ensure_container_deleted(model.uuid)
@@ -1235,7 +1235,7 @@ class TestContainer(base.BaseZunTest):
                 floatingip_id)['floatingip']
             self.assertEqual(status, floating_ip['status'],
                              message="FloatingIP: {fp} is at status: {cst}. "
-                                     "failed  to reach status: {st}"
+                                     "failed to reach status: {st}"
                              .format(fp=floating_ip, cst=floating_ip['status'],
                                      st=status))
 
