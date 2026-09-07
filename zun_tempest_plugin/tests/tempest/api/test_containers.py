@@ -107,9 +107,21 @@ class TestContainer(base.BaseZunTest):
     @decorators.idempotent_id('cef53a56-22b7-4808-b01c-06b2b7126115')
     def test_delete_container(self):
         _, container = self._create_container()
+        port_ids = {
+            address['port']
+            for addresses in container.addresses.values()
+            for address in addresses
+        }
+
         resp, _ = self.container_client.delete_container(container.uuid)
         self.assertEqual(204, resp.status)
         self.container_client.ensure_container_deleted(container.uuid)
+
+        for port_id in port_ids:
+            self.assertRaises(
+                lib_exc.NotFound,
+                self.os_admin.ports_client.show_port,
+                port_id)
 
     @decorators.idempotent_id('ef69c9e7-0ce0-4e14-b7ec-c1dc581a3927')
     def test_run_container(self):
