@@ -278,7 +278,7 @@ class TestContainer(base.BaseZunTest):
 
     def _create_v4_subnet_and_pool(self, network, subnet_values=None,
                                    pool_values=None):
-        pool_kwargs = {'prefixes': [u'10.11.12.0/24'],
+        pool_kwargs = {'prefixes': ['10.11.12.0/24'],
                        'min_prefixlen': '28'}
         if pool_values:
             pool_kwargs.update(pool_values)
@@ -294,7 +294,7 @@ class TestContainer(base.BaseZunTest):
 
     def _create_v6_subnet_and_pool(self, network, subnet_values=None,
                                    pool_values=None):
-        pool_kwargs = {'prefixes': [u'2001:db8:3::/48'],
+        pool_kwargs = {'prefixes': ['2001:db8:3::/48'],
                        'min_prefixlen': '64'}
         if pool_values:
             pool_kwargs.update(pool_values)
